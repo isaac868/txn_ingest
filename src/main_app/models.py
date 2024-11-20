@@ -14,7 +14,7 @@ class ParseRule(models.Model):
     txn_type_col = models.IntegerField(null=True, blank=True, validators=[MinValueValidator(0)])
 
     class Meta:
-        models.UniqueConstraint(fields=["name"], name="unique_parse_rule_name")
+        constraints = [models.UniqueConstraint(fields=["name"], name="unique_parse_rule_name")]
 
     def __str__(self):
         return self.name
@@ -26,7 +26,7 @@ class Category(models.Model):
 
     class Meta:
         ordering = ["priority"]
-        models.UniqueConstraint(fields=["name"], name="unique_category_rule_name")
+        constraints = [models.UniqueConstraint(fields=["name"], name="unique_category_rule_name")]
 
     def __str__(self):
         return self.name
