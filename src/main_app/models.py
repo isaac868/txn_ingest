@@ -26,6 +26,7 @@ class Category(models.Model):
 
     class Meta:
         ordering = ["priority"]
+        verbose_name_plural="Categories"
         constraints = [models.UniqueConstraint(fields=["name"], name="unique_category_rule_name")]
 
     def __str__(self):
@@ -33,6 +34,14 @@ class Category(models.Model):
 
 
 class CategoryRule(models.Model):
+    OPERATOR_CHOICES = [
+        ('equals', 'Equals'),
+        ('contains', 'Contains'),
+        ('regex', 'Regex')
+    ]
     match_text = models.CharField(max_length=50)
-    match_type = models.CharField(max_length=50)
+    match_type = models.CharField(max_length=50, choices=OPERATOR_CHOICES, default="contains")
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="conditions")
+
+    def __str__(self):
+        return f"If {self.match_type} {self.match_text} assign {self.category.name} category"
