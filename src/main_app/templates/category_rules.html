@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+<form method="POST">
+    {% csrf_token %}
+    
+    {{ category_formset.management_form }}
+    {% for category, rules in zipped_lists %}
+    ------------------------------------------
+        {{ category }}
+        {{ rules }}
+    ------------------------------------------
+    {% endfor %}
+    <input type="submit" value="Save">
+</form>
+
+{% endblock %}
