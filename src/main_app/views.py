@@ -1,6 +1,7 @@
 from django.shortcuts import render
 import csv
 import io
+import re
 from datetime import datetime
 from django.views import View
 from django.shortcuts import redirect
@@ -21,6 +22,20 @@ def parse_rules(request):
             return redirect(reverse(parse_rules))
     return render(request, "parse_rules.html", {"formset": rule_formset})
 
+def evaluate_rule(rule, description_text):
+    match rule.match_type:
+        case "equals":
+            return rule.match_text.lower() == description_text.lower()
+        case "contains":
+            return rule.match_text.lower() in description_text.lower()
+        case "regex":
+            return re.search(rule.match_text, description_text) is not None
+
+def get_category(description_text):
+    for category in Category.objects.all():
+        if any(evaluate_rule(rule, description_text) for rule in category.rule_set.all()):
+            return category
+    return None
 
 def upload(request):
     form = FileSelectForm()
@@ -31,7 +46,8 @@ def upload(request):
             table = []
             for row in form.csv_rows:
                 date = datetime.strptime(row[parse_rule.date_col], parse_rule.date_fmt_str).isoformat()
-                table.append([date, row[parse_rule.desc_col].strip(), row[parse_rule.amount_col]])
+                category = get_category(row[parse_rule.desc_col]).name if get_category(row[parse_rule.desc_col]) else ""
+                table.append([date, row[parse_rule.desc_col].strip(), row[parse_rule.amount_col], category])
             return render(request, "upload_preview.html", {"table": table})
 
     return render(request, "upload.html", {"form": form})
@@ -76,7 +92,8 @@ def category_rules(request):
 
             if all_valid:
                 category_formset.save()
-                for rule_formset in rule_formsets:
+                for category_form, rule_formset in zip(category_formset, rule_formsets):
+                    rule_formset.instance = category_form.instance
                     rule_formset.save()
                 return redirect(reverse(category_rules))
 
