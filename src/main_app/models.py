@@ -34,7 +34,7 @@ class Category(models.Model):
 
 
 class CategoryRule(models.Model):
-    OPERATOR_CHOICES = [("equals", "Equals"), ("contains", "Contains"), ("regex", "Regex")]
+    OPERATOR_CHOICES = [("equals", "Equals"), ("contains", "Contains"), ("regex", "Regex"), ("starts_with", "Starts with"), ("ends_with", "Ends with")]
     match_text = models.CharField(max_length=50)
     match_type = models.CharField(max_length=50, choices=OPERATOR_CHOICES, default="contains")
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="rule_set")

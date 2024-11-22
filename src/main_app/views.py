@@ -30,6 +30,11 @@ def evaluate_rule(rule, description_text):
             return rule.match_text.lower() in description_text.lower()
         case "regex":
             return re.search(rule.match_text, description_text) is not None
+        case "starts_with":
+            return description_text.lower().startswith(rule.match_text.lower())
+        case "ends_with":
+            return description_text.lower().endswith(rule.match_text.lower())
+
 
 def get_category(description_text):
     for category in Category.objects.all():
