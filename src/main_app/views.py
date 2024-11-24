@@ -7,10 +7,13 @@ from django.views import View
 from django.shortcuts import redirect
 from django.forms import modelformset_factory, inlineformset_factory
 from django.urls import reverse
+from django.contrib.auth import login, forms as auth_forms
+from django.contrib.auth.decorators import login_required
 from .models import ParseRule, CategoryRule, Category
 from .forms import ParseRuleForm, FileSelectForm
 
 
+@login_required
 def parse_rules(request):
     RuleFormset = modelformset_factory(ParseRule, form=ParseRuleForm, extra=1, can_delete=True)
 
@@ -21,6 +24,7 @@ def parse_rules(request):
             rule_formset.save()
             return redirect(reverse(parse_rules))
     return render(request, "parse_rules.html", {"formset": rule_formset})
+
 
 def evaluate_rule(rule, description_text):
     match rule.match_type:
@@ -42,6 +46,8 @@ def get_category(description_text):
             return category
     return None
 
+
+@login_required
 def upload(request):
     form = FileSelectForm()
     if request.method == "POST":
@@ -78,6 +84,7 @@ def get_rule_formset(category_form, data=None):
         return RuleFormset(data, prefix=f"new-category-{category_form.prefix}")
 
 
+@login_required
 def category_rules(request):
     CategoryFormset = modelformset_factory(Category, exclude=[], extra=1, can_delete=True)
 
@@ -104,3 +111,13 @@ def category_rules(request):
 
     context = {"category_formset": category_formset, "zipped_lists": zip(category_formset, rule_formsets)}
     return render(request, "category_rules.html", context)
+
+
+def register(request):
+    auth_form = auth_forms.BaseUserCreationForm()
+    if request.method == "POST":
+        auth_form = auth_forms.BaseUserCreationForm(request.POST)
+        if auth_form.is_valid():
+            login(request, auth_form.save())
+            return redirect("upload")
+    return render(request, "registration/login.html", {"form": auth_form})
