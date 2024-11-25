@@ -95,15 +95,9 @@ def category_rules(request):
     if request.method == "POST":
         category_formset = CategoryFormset(request.POST, instance=request.user)
         if category_formset.is_valid():
-            rule_formsets = []
-            all_valid = True
-            for category_form in category_formset:
-                rule_formset = get_rule_formset(category_form, request.POST)
-                rule_formsets.append(rule_formset)
-                if not rule_formset.is_valid():
-                    all_valid = False
+            rule_formsets = [get_rule_formset(category_form, request.POST) for category_form in category_formset]
 
-            if all_valid:
+            if all(formset.is_valid() for formset in rule_formsets):
                 category_formset.save()
                 for category_form, rule_formset in zip(category_formset, rule_formsets):
                     rule_formset.instance = category_form.instance
