@@ -1,8 +1,10 @@
 from django.db import models
+from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator
 
 
 class ParseRule(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
     date_fmt_str = models.CharField(max_length=30)
     csv_delim = models.CharField(null=True, blank=True, max_length=1)
@@ -21,6 +23,7 @@ class ParseRule(models.Model):
 
 
 class Category(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
     priority = models.IntegerField()
 
@@ -41,3 +44,14 @@ class CategoryRule(models.Model):
 
     def __str__(self):
         return f"If {self.match_type} {self.match_text} assign {self.category.name} category"
+
+
+class UserData(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='userdata')
+    upload_file_path = models.CharField(max_length=100)
+
+    class Meta:
+        verbose_name_plural = "User Data"
+
+    def __str__(self):
+        return self.user.username

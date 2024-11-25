@@ -9,7 +9,7 @@ from .models import ParseRule, Category
 class ParseRuleForm(forms.ModelForm):
     class Meta:
         model = ParseRule
-        exclude = []
+        exclude = ["user"]
         labels = {
             "name": "Name *",
             "date_fmt_str": "Date format string *",
@@ -28,18 +28,16 @@ class ParseRuleForm(forms.ModelForm):
             field.widget.attrs["class"] = "form-control"
 
 
-def get_rules():
-    rules = list(ParseRule.objects.all())
-    choices = []
-    for rule in rules:
-        choices.append((rule.pk, rule.name))
-    return choices
-
-
 class FileSelectForm(forms.Form):
+
     file = forms.FileField()
-    choice = forms.ChoiceField(choices=get_rules)
+    choice = forms.ChoiceField()
     csv_rows = []
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop("user", None)
+        super().__init__(*args, **kwargs)
+        self.fields["choice"].choices = {rule.pk: rule.name for rule in ParseRule.objects.filter(user=self.user)}
 
     def clean(self):
         cleaned_data = super().clean()
@@ -61,10 +59,11 @@ class FileSelectForm(forms.Form):
                 raise ValidationError("The parse rule %(rule)s does not exist.", params={"rule": self.choice.label}, code="internal_error")
             reader = csv.reader(file_contents)
 
-            for x in range(parse_rule.start_line):
-                next(reader)
+            if parse_rule.start_line:
+                for x in range(parse_rule.start_line):
+                    next(reader)
+                row_index = parse_rule.start_line
 
-            row_index = parse_rule.start_line
             csv_col_num = 0
             for row in reader:
                 # Check desc col, will raise IndexError if parsing fails

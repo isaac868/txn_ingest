@@ -5,21 +5,22 @@ import re
 from datetime import datetime
 from django.views import View
 from django.shortcuts import redirect
-from django.forms import modelformset_factory, inlineformset_factory
+from django.forms import inlineformset_factory
 from django.urls import reverse
 from django.contrib.auth import login, forms as auth_forms
+from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
-from .models import ParseRule, CategoryRule, Category
+from .models import ParseRule, CategoryRule, Category, UserData
 from .forms import ParseRuleForm, FileSelectForm
 
 
 @login_required
 def parse_rules(request):
-    RuleFormset = modelformset_factory(ParseRule, form=ParseRuleForm, extra=1, can_delete=True)
+    RuleFormset = inlineformset_factory(User, ParseRule, form=ParseRuleForm, extra=1, can_delete=True)
 
-    rule_formset = RuleFormset()
+    rule_formset = RuleFormset(instance=request.user)
     if request.method == "POST":
-        rule_formset = RuleFormset(request.POST)
+        rule_formset = RuleFormset(request.POST, instance=request.user)
         if rule_formset.is_valid():
             rule_formset.save()
             return redirect(reverse(parse_rules))
@@ -49,16 +50,16 @@ def get_category(description_text):
 
 @login_required
 def upload(request):
-    form = FileSelectForm()
+    form = FileSelectForm(user=request.user)
     if request.method == "POST":
-        form = FileSelectForm(request.POST, request.FILES)
+        form = FileSelectForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             parse_rule = ParseRule.objects.get(pk=form.cleaned_data["choice"])
             table = []
             for row in form.csv_rows:
                 date = datetime.strptime(row[parse_rule.date_col], parse_rule.date_fmt_str).isoformat()
-                category = get_category(row[parse_rule.desc_col]).name if get_category(row[parse_rule.desc_col]) else ""
-                table.append([date, row[parse_rule.desc_col].strip(), row[parse_rule.amount_col], category])
+                category = get_category(row[parse_rule.desc_col]).name if parse_rule.desc_col and get_category(row[parse_rule.desc_col]) else ""
+                table.append([date, row[parse_rule.desc_col].strip() if parse_rule.desc_col else "", row[parse_rule.amount_col], category])
             return render(request, "upload_preview.html", {"table": table})
 
     return render(request, "upload.html", {"form": form})
@@ -86,13 +87,13 @@ def get_rule_formset(category_form, data=None):
 
 @login_required
 def category_rules(request):
-    CategoryFormset = modelformset_factory(Category, exclude=[], extra=1, can_delete=True)
+    CategoryFormset = inlineformset_factory(User, Category, exclude=["user"], extra=1, can_delete=True)
 
-    category_formset = CategoryFormset()
+    category_formset = CategoryFormset(instance=request.user)
     rule_formsets = [get_rule_formset(category_form) for category_form in category_formset]
 
     if request.method == "POST":
-        category_formset = CategoryFormset(request.POST)
+        category_formset = CategoryFormset(request.POST, instance=request.user)
         if category_formset.is_valid():
             rule_formsets = []
             all_valid = True
@@ -118,6 +119,8 @@ def register(request):
     if request.method == "POST":
         auth_form = auth_forms.BaseUserCreationForm(request.POST)
         if auth_form.is_valid():
-            login(request, auth_form.save())
+            new_user = auth_form.save()
+            UserData.objects.create(user=new_user)
+            login(request, new_user)
             return redirect("upload")
-    return render(request, "registration/login.html", {"form": auth_form})
+    return render(request, "registration/register.html", {"form": auth_form})
