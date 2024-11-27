@@ -12,7 +12,7 @@
         ajaxURL:"{% url "upload" %}",
         ajaxParams:{ preview: "True" },
         movableRows:false, 
-        placeholder:"No Data Set",
+        rowHeader:{formatter:"rowSelection", titleFormatter:"rowSelection", hozAlign:"center", headerSort:false, selectableRows:false, resizable:false},
         columns:[
             {title:"Date", field: "date", formatter:"datetime", formatterParams:{
                 inputFormat:"iso",
