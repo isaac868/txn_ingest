@@ -10,7 +10,7 @@ class ParseRule(models.Model):
     csv_delim = models.CharField(null=True, blank=True, max_length=1)
     start_line = models.IntegerField(null=True, blank=True, validators=[MinValueValidator(0)])
     date_col = models.IntegerField(validators=[MinValueValidator(0)])
-    desc_col = models.IntegerField(null=True, blank=True, validators=[MinValueValidator(0)])
+    desc_col = models.IntegerField(validators=[MinValueValidator(0)])
     sub_desc_col = models.IntegerField(null=True, blank=True, validators=[MinValueValidator(0)])
     amount_col = models.IntegerField(validators=[MinValueValidator(0)])
     txn_type_col = models.IntegerField(null=True, blank=True, validators=[MinValueValidator(0)])

@@ -2,6 +2,7 @@ import csv
 import io
 from datetime import datetime
 from django import forms
+from django.core.files.storage import default_storage
 from django.core.exceptions import ValidationError
 from .models import ParseRule, Category
 
@@ -32,7 +33,6 @@ class FileSelectForm(forms.Form):
 
     file = forms.FileField()
     choice = forms.ChoiceField()
-    csv_rows = []
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop("user", None)
@@ -48,7 +48,28 @@ class FileSelectForm(forms.Form):
         self.validate_upload(io.TextIOWrapper(cleaned_data["file"], encoding="utf-8"), cleaned_data["choice"])
         return cleaned_data
 
-    def validate_upload(self, file_contents, choice_idx):
+    @staticmethod
+    def evaluate_rule(rule, description_text):
+        match rule.match_type:
+            case "equals":
+                return rule.match_text.lower() == description_text.lower()
+            case "contains":
+                return rule.match_text.lower() in description_text.lower()
+            case "regex":
+                return re.search(rule.match_text, description_text) is not None
+            case "starts_with":
+                return description_text.lower().startswith(rule.match_text.lower())
+            case "ends_with":
+                return description_text.lower().endswith(rule.match_text.lower())
+
+    @staticmethod
+    def get_category(description_text):
+        for category in Category.objects.all():
+            if any(FileSelectForm.evaluate_rule(rule, description_text) for rule in category.rule_set.all()):
+                return category
+        return None
+
+    def validate_upload(self, file, choice_idx):
         """Validate the uploaded file given the selected parse rule. choice_idx corresponds to the pk of the parse rule."""
 
         row_index = 0
@@ -57,8 +78,9 @@ class FileSelectForm(forms.Form):
                 parse_rule = ParseRule.objects.get(pk=choice_idx)
             except ParseRule.DoesNotExist:
                 raise ValidationError("The parse rule %(rule)s does not exist.", params={"rule": self.choice.label}, code="internal_error")
-            reader = csv.reader(file_contents)
 
+            csv_rows = [["id", "date", "desc", "cat", "amt"]]
+            reader = csv.reader(file)
             if parse_rule.start_line:
                 for x in range(parse_rule.start_line):
                     next(reader)
@@ -66,7 +88,7 @@ class FileSelectForm(forms.Form):
 
             csv_col_num = 0
             for row in reader:
-                # Check desc col, will raise IndexError if parsing fails
+                # Check all rows have same number of columns
                 if csv_col_num != len(row) and csv_col_num != 0:
                     raise ValidationError(
                         "Error, number of CSV columns on line %(line)s does not match other rows.", params={"line": row_index}, code="input_error"
@@ -88,11 +110,28 @@ class FileSelectForm(forms.Form):
                         params={"line": row_index, "column": parse_rule.amount_col, "val": row[parse_rule.amount_col]},
                         code="input_error",
                     )
-                self.csv_rows.append(row)
+
+                description = row[parse_rule.desc_col].strip()
+                if parse_rule.sub_desc_col:
+                    description += " " + row[parse_rule.sub_desc_col].strip()
+                category_str = FileSelectForm.get_category(description).name if FileSelectForm.get_category(description) else ""
+                csv_rows.append(
+                    [
+                        row_index,
+                        datetime.strptime(row[parse_rule.date_col], parse_rule.date_fmt_str).isoformat(),
+                        description,
+                        category_str,
+                        row[parse_rule.amount_col],
+                    ]
+                )
                 row_index += 1
+
+            with default_storage.open(f"uploads/{self.user.pk}", "w") as file:
+                writer = csv.writer(file)
+                writer.writerows(csv_rows)
         except ValidationError:
             raise
         except IndexError:
             raise ValidationError("Indexing error present on line %(line)s.", params={"line": row_index}, code="input_error")
-        except:
+        except Exception as e:
             raise ValidationError("Internal server error.", code="internal_error")

@@ -1,13 +1,13 @@
 from django.shortcuts import render
 import csv
-import io
-import re
-from datetime import datetime
 from django.views import View
 from django.shortcuts import redirect
 from django.forms import inlineformset_factory
 from django.urls import reverse
+from django.http import JsonResponse
 from django.contrib.auth import login, forms as auth_forms
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.files.storage import default_storage
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from .models import ParseRule, CategoryRule, Category, UserData
@@ -27,54 +27,26 @@ def parse_rules(request):
     return render(request, "parse_rules.html", {"formset": rule_formset})
 
 
-def evaluate_rule(rule, description_text):
-    match rule.match_type:
-        case "equals":
-            return rule.match_text.lower() == description_text.lower()
-        case "contains":
-            return rule.match_text.lower() in description_text.lower()
-        case "regex":
-            return re.search(rule.match_text, description_text) is not None
-        case "starts_with":
-            return description_text.lower().startswith(rule.match_text.lower())
-        case "ends_with":
-            return description_text.lower().endswith(rule.match_text.lower())
-
-
-def get_category(description_text):
-    for category in Category.objects.all():
-        if any(evaluate_rule(rule, description_text) for rule in category.rule_set.all()):
-            return category
-    return None
-
-
-@login_required
-def upload(request):
-    form = FileSelectForm(user=request.user)
-    if request.method == "POST":
-        form = FileSelectForm(request.POST, request.FILES, user=request.user)
-        if form.is_valid():
-            parse_rule = ParseRule.objects.get(pk=form.cleaned_data["choice"])
-            table = []
-            for row in form.csv_rows:
-                date = datetime.strptime(row[parse_rule.date_col], parse_rule.date_fmt_str).isoformat()
-                category = get_category(row[parse_rule.desc_col]).name if parse_rule.desc_col and get_category(row[parse_rule.desc_col]) else ""
-                table.append([date, row[parse_rule.desc_col].strip() if parse_rule.desc_col else "", row[parse_rule.amount_col], category])
-            return render(request, "upload_preview.html", {"table": table})
-
-    return render(request, "upload.html", {"form": form})
-
-
-class UploadView(View):
+class UploadView(LoginRequiredMixin, View):
     def get(self, request):
-        return render(request, "upload.html", {"form": FileSelectForm})
+        if "preview" in request.GET and default_storage.exists(f"uploads/{request.user.pk}"):
+            with default_storage.open(f"uploads/{request.user.pk}", "r") as file:
+                reader = csv.DictReader(file)
+                table_data = []
+                for row in reader:
+                    table_data.append(row)
+                return JsonResponse(table_data, safe=False)
+        elif "uploaded-file" not in request.session or not default_storage.exists(f"uploads/{request.user.pk}"):
+            return render(request, "upload.html", {"form": FileSelectForm(user=request.user)})
+        else:
+            return render(request, "upload_preview.html")
 
     def post(self, request):
         if "uploaded-file" not in request.session:
-            form = FileSelectForm(request.POST, request.FILES)
+            form = FileSelectForm(request.POST, request.FILES, user=request.user)
             if form.is_valid():
-                file = io.TextIOWrapper(request.FILES["file"].file, encoding="utf-8")
-                reader = csv.reader(file)
+                request.session["uploaded-file"] = True
+                return redirect(reverse("upload"))
 
 
 def get_rule_formset(category_form, data=None):

@@ -2,42 +2,27 @@
 
 {% block content %}
 
-<table id="txn-table"> 
-    <thead>
-        <tr>
-            <th>Date</th>
-            <th>Description</th>
-            <th>Amount</th>
-            <th>Category</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for row in table %}
-        <tr>
-            {% for element in row %}
-            <td>{{ element }}</td>
-            {% endfor %}
-        </tr>  
-        {% endfor %}
-    </tbody>
-</table>
+<div id="txn-table"></div>
 
 <script>
     var table = new Tabulator("#txn-table", {
         dependencies:{
             DateTime:luxon.DateTime,
         },
+        ajaxURL:"{% url "upload" %}",
+        ajaxParams:{ preview: "True" },
         movableRows:false, 
+        placeholder:"No Data Set",
         columns:[
-            {title:"Date", formatter:"datetime", formatterParams:{
+            {title:"Date", field: "date", formatter:"datetime", formatterParams:{
                 inputFormat:"iso",
                 outputFormat:"yyyy-MM-dd",
                 invalidPlaceholder:"(invalid date)",
                 timezone:"America/Los_Angeles",
             }},
-            {title:"Description", sorter:"string"},
-            {title:"Amount", sorter:"number"},
-            {title:"Category", sorter:"string"},
+            {title:"Description", field: "desc", sorter:"string"},
+            {title:"Category", field: "cat", sorter:"string"},
+            {title:"Amount", field: "amt", sorter:"number"},
         ],
     });
 </script>
