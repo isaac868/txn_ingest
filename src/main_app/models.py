@@ -3,6 +3,31 @@ from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator
 
 
+class Category(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100)
+    priority = models.IntegerField()
+
+    class Meta:
+        ordering = ["priority"]
+        verbose_name_plural = "Categories"
+        constraints = [models.UniqueConstraint(fields=["name", "user"], name="unique_category_rule_name")]
+
+    def __str__(self):
+        return self.name
+
+
+class Transaction(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    date = models.DateField()
+    description = models.CharField(max_length=300)
+    category = models.ForeignKey(Category, null=True, blank=True, on_delete=models.CASCADE)
+    amount = models.FloatField()
+
+    def __str__(self):
+        return self.description
+
+
 class ParseRule(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
@@ -22,20 +47,6 @@ class ParseRule(models.Model):
         return self.name
 
 
-class Category(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    name = models.CharField(max_length=100)
-    priority = models.IntegerField()
-
-    class Meta:
-        ordering = ["priority"]
-        verbose_name_plural = "Categories"
-        constraints = [models.UniqueConstraint(fields=["name", "user"], name="unique_category_rule_name")]
-
-    def __str__(self):
-        return self.name
-
-
 class CategoryRule(models.Model):
     OPERATOR_CHOICES = [("equals", "Equals"), ("contains", "Contains"), ("regex", "Regex"), ("starts_with", "Starts with"), ("ends_with", "Ends with")]
     match_text = models.CharField(max_length=50)
@@ -47,7 +58,7 @@ class CategoryRule(models.Model):
 
 
 class UserData(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='userdata')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="userdata")
     upload_file_path = models.CharField(max_length=100)
 
     class Meta:

@@ -4,6 +4,9 @@
 <form enctype="multipart/form-data" method="POST">
     {% csrf_token %}
     {{ form.as_p }}
+    {% if form.errors %}
+    {{ form.errors }}
+    {% endif %}
     <input type="submit" value="Submit">
 </form>
 {% endblock %}

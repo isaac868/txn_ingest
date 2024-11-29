@@ -1,5 +1,6 @@
 from django.shortcuts import render
 import csv
+from datetime import datetime
 from django.views import View
 from django.shortcuts import redirect
 from django.forms import inlineformset_factory
@@ -10,7 +11,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.files.storage import default_storage
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
-from .models import ParseRule, CategoryRule, Category, UserData
+from .models import ParseRule, CategoryRule, Category, UserData, Transaction
 from .forms import ParseRuleForm, FileSelectForm
 
 
@@ -29,24 +30,44 @@ def parse_rules(request):
 
 class UploadView(LoginRequiredMixin, View):
     def get(self, request):
+        # "preview" set during tabulator ajax query
         if "preview" in request.GET and default_storage.exists(f"uploads/{request.user.pk}"):
             with default_storage.open(f"uploads/{request.user.pk}", "r") as file:
                 reader = csv.DictReader(file)
                 table_data = []
                 for row in reader:
+                    row["cat"] = "" if row["cat"] == "-1" else Category.objects.get(pk=row["cat"]).name
                     table_data.append(row)
                 return JsonResponse(table_data, safe=False)
-        elif "uploaded-file" not in request.session or not default_storage.exists(f"uploads/{request.user.pk}"):
-            return render(request, "upload.html", {"form": FileSelectForm(user=request.user)})
-        else:
+        elif "uploaded-file" in request.session and default_storage.exists(f"uploads/{request.user.pk}"):
             return render(request, "upload_preview.html")
+        else:
+            return render(request, "upload.html", {"form": FileSelectForm(user=request.user)})
 
     def post(self, request):
         if "uploaded-file" not in request.session:
             form = FileSelectForm(request.POST, request.FILES, user=request.user)
             if form.is_valid():
                 request.session["uploaded-file"] = True
-                return redirect(reverse("upload"))
+            else:
+                return render(request, "upload.html", {"form": form})
+        else:
+            if "save-upload" in request.POST:
+                with default_storage.open(f"uploads/{request.user.pk}", "r") as file:
+                    reader = csv.DictReader(file)
+                    for row in reader:
+                        Transaction.objects.create(
+                            user=request.user,
+                            date=datetime.fromisoformat(row["date"]),
+                            description=row["desc"],
+                            category=(Category.objects.get(pk=row["cat"]) if row["cat"] != "-1" else None),
+                            amount=row["amt"],
+                        )
+            # if "cancel-upload" in request.POST: Nothing to do, just redirect
+
+            del request.session["uploaded-file"]
+            default_storage.delete(f"uploads/{request.user.pk}")
+        return redirect(reverse("upload"))
 
 
 def get_rule_formset(category_form, data=None):

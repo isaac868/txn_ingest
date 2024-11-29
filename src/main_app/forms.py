@@ -114,13 +114,12 @@ class FileSelectForm(forms.Form):
                 description = row[parse_rule.desc_col].strip()
                 if parse_rule.sub_desc_col:
                     description += " " + row[parse_rule.sub_desc_col].strip()
-                category_str = FileSelectForm.get_category(description).name if FileSelectForm.get_category(description) else ""
                 csv_rows.append(
                     [
                         row_index,
                         datetime.strptime(row[parse_rule.date_col], parse_rule.date_fmt_str).isoformat(),
                         description,
-                        category_str,
+                        FileSelectForm.get_category(description).pk if FileSelectForm.get_category(description) else -1,
                         row[parse_rule.amount_col],
                     ]
                 )
