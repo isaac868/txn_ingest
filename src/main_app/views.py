@@ -12,7 +12,7 @@ from django.core.files.storage import default_storage
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from .models import ParseRule, CategoryRule, Category, UserData, Transaction
-from .forms import ParseRuleForm, FileSelectForm
+from .forms import ParseRuleForm, FileSelectForm, CategoryForm
 
 
 @login_required
@@ -36,7 +36,7 @@ class UploadView(LoginRequiredMixin, View):
                 reader = csv.DictReader(file)
                 table_data = []
                 for row in reader:
-                    row["cat"] = "" if row["cat"] == "-1" else Category.objects.get(pk=row["cat"]).name
+                    row["cat"] = Category.objects.get(pk=row["cat"]).name
                     table_data.append(row)
                 return JsonResponse(table_data, safe=False)
         elif "uploaded-file" in request.session and default_storage.exists(f"uploads/{request.user.pk}"):
@@ -60,7 +60,7 @@ class UploadView(LoginRequiredMixin, View):
                             user=request.user,
                             date=datetime.fromisoformat(row["date"]),
                             description=row["desc"],
-                            category=(Category.objects.get(pk=row["cat"]) if row["cat"] != "-1" else None),
+                            category=(Category.objects.get(pk=row["cat"])),
                             amount=row["amt"],
                         )
             # if "cancel-upload" in request.POST: Nothing to do, just redirect
@@ -80,13 +80,14 @@ def get_rule_formset(category_form, data=None):
 
 @login_required
 def category_rules(request):
-    CategoryFormset = inlineformset_factory(User, Category, exclude=["user"], extra=1, can_delete=True)
+    CategoryFormset = inlineformset_factory(User, Category, form=CategoryForm, exclude=["user"], extra=1, can_delete=True)
 
-    category_formset = CategoryFormset(instance=request.user)
+    filtered_queryset = Category.objects.exclude(pk=Category.get_uncategorized(request.user).pk)
+    category_formset = CategoryFormset(instance=request.user, queryset=filtered_queryset, form_kwargs={"user": request.user})
     rule_formsets = [get_rule_formset(category_form) for category_form in category_formset]
 
     if request.method == "POST":
-        category_formset = CategoryFormset(request.POST, instance=request.user)
+        category_formset = CategoryFormset(request.POST, instance=request.user, queryset=filtered_queryset, form_kwargs={"user": request.user})
         if category_formset.is_valid():
             rule_formsets = [get_rule_formset(category_form, request.POST) for category_form in category_formset]
 

@@ -1,5 +1,6 @@
 import csv
 import io
+import re
 from datetime import datetime
 from django import forms
 from django.core.files.storage import default_storage
@@ -62,12 +63,11 @@ class FileSelectForm(forms.Form):
             case "ends_with":
                 return description_text.lower().endswith(rule.match_text.lower())
 
-    @staticmethod
-    def get_category(description_text):
+    def get_category(self, description_text):
         for category in Category.objects.all():
             if any(FileSelectForm.evaluate_rule(rule, description_text) for rule in category.rule_set.all()):
                 return category
-        return None
+        return Category.get_uncategorized(self.user)
 
     def validate_upload(self, file, choice_idx):
         """Validate the uploaded file given the selected parse rule. choice_idx corresponds to the pk of the parse rule."""
@@ -119,7 +119,7 @@ class FileSelectForm(forms.Form):
                         row_index,
                         datetime.strptime(row[parse_rule.date_col], parse_rule.date_fmt_str).isoformat(),
                         description,
-                        FileSelectForm.get_category(description).pk if FileSelectForm.get_category(description) else -1,
+                        FileSelectForm.get_category(self, description).pk,
                         row[parse_rule.amount_col],
                     ]
                 )
@@ -134,3 +134,19 @@ class FileSelectForm(forms.Form):
             raise ValidationError("Indexing error present on line %(line)s.", params={"line": row_index}, code="input_error")
         except Exception as e:
             raise ValidationError("Internal server error.", code="internal_error")
+
+
+class CategoryForm(forms.ModelForm):
+    class Meta:
+        model = ParseRule
+        exclude = ["user"]
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop("user", None)
+        super().__init__(*args, **kwargs)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if self.cleaned_data["name"] == Category.get_uncategorized(self.user).name:
+            raise ValidationError("Category cannot be named %(cat)s", params={"cat": Category.get_uncategorized(self.user).name})
+        return cleaned_data

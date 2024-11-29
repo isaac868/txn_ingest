@@ -13,6 +13,10 @@ class Category(models.Model):
         verbose_name_plural = "Categories"
         constraints = [models.UniqueConstraint(fields=["name", "user"], name="unique_category_rule_name")]
 
+    @staticmethod
+    def get_uncategorized(current_user):
+        return Category.objects.get_or_create(user=current_user, name="Uncategorized", defaults={"priority": -1})[0]
+
     def __str__(self):
         return self.name
 
