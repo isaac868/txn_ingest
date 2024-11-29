@@ -64,7 +64,7 @@ class FileSelectForm(forms.Form):
                 return description_text.lower().endswith(rule.match_text.lower())
 
     def get_category(self, description_text):
-        for category in Category.objects.all():
+        for category in Category.objects.filter(user=self.user):
             if any(FileSelectForm.evaluate_rule(rule, description_text) for rule in category.rule_set.all()):
                 return category
         return Category.get_uncategorized(self.user)

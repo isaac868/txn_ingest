@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator
+from django.dispatch import receiver
+from django.db.models.signals import pre_delete
 
 
 class Category(models.Model):
@@ -18,18 +20,24 @@ class Category(models.Model):
         return Category.objects.get_or_create(user=current_user, name="Uncategorized", defaults={"priority": -1})[0]
 
     def __str__(self):
-        return self.name
+        return self.user.username + ": " + self.name
 
 
 class Transaction(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     date = models.DateField()
     description = models.CharField(max_length=300)
-    category = models.ForeignKey(Category, null=True, blank=True, on_delete=models.CASCADE)
+    category = models.ForeignKey(Category, null=True, blank=True, on_delete=models.DO_NOTHING)
     amount = models.FloatField()
 
     def __str__(self):
         return self.description
+
+
+@receiver(pre_delete, sender=Category)
+def assign_uncategorized(sender, **kwargs):
+    category = kwargs["instance"]
+    category.transaction_set.update(category=Category.get_uncategorized(category.user))
 
 
 class ParseRule(models.Model):
@@ -59,14 +67,3 @@ class CategoryRule(models.Model):
 
     def __str__(self):
         return f"If {self.match_type} {self.match_text} assign {self.category.name} category"
-
-
-class UserData(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="userdata")
-    upload_file_path = models.CharField(max_length=100)
-
-    class Meta:
-        verbose_name_plural = "User Data"
-
-    def __str__(self):
-        return self.user.username

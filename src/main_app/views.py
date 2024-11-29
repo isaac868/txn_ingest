@@ -11,7 +11,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.files.storage import default_storage
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
-from .models import ParseRule, CategoryRule, Category, UserData, Transaction
+from .models import ParseRule, CategoryRule, Category, Transaction
 from .forms import ParseRuleForm, FileSelectForm, CategoryForm
 
 
@@ -108,7 +108,6 @@ def register(request):
         auth_form = auth_forms.BaseUserCreationForm(request.POST)
         if auth_form.is_valid():
             new_user = auth_form.save()
-            UserData.objects.create(user=new_user)
             login(request, new_user)
             return redirect("upload")
     return render(request, "registration/register.html", {"form": auth_form})
