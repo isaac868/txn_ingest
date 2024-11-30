@@ -1,0 +1,31 @@
+{% extends "tabulator_base.html" %}
+
+{% block content %}
+
+<div id="txn-table"></div>
+
+<script>
+    var table = new Tabulator("#txn-table", {
+        dependencies:{
+            DateTime:luxon.DateTime,
+        },
+        index: "pk",
+        ajaxURL:"{% url "transactions" %}",
+        ajaxParams:{ preview: "True" },
+        movableRows:false, 
+        rowHeader:{formatter:"rowSelection", titleFormatter:"plaintext", title:"Delete", hozAlign:"center", headerSort:false, resizable:false},
+        columns:[
+            {title:"Date", field: "date", formatter:"datetime", formatterParams:{
+                inputFormat:"iso",
+                outputFormat:"yyyy-MM-dd",
+                invalidPlaceholder:"(invalid date)",
+                timezone:"America/Los_Angeles",
+            }},
+            {title:"Description", field: "description", sorter:"string"},
+            {title:"Category", field: "category__name", sorter:"string"},
+            {title:"Amount", field: "amount", sorter:"number"},
+        ],
+    });
+</script>
+
+{% endblock %}

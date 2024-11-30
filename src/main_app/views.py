@@ -6,6 +6,7 @@ from django.shortcuts import redirect
 from django.forms import inlineformset_factory
 from django.urls import reverse
 from django.http import JsonResponse
+from django.db.models import F
 from django.contrib.auth import login, forms as auth_forms
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.files.storage import default_storage
@@ -40,12 +41,13 @@ class UploadView(LoginRequiredMixin, View):
                     table_data.append(row)
                 return JsonResponse(table_data, safe=False)
         elif "uploaded-file" in request.session and default_storage.exists(f"uploads/{request.user.pk}"):
+            del request.session["uploaded-file"]
             return render(request, "upload_preview.html")
         else:
             return render(request, "upload.html", {"form": FileSelectForm(user=request.user)})
 
     def post(self, request):
-        if "uploaded-file" not in request.session:
+        if "preview-upload" in request.POST:
             form = FileSelectForm(request.POST, request.FILES, user=request.user)
             if form.is_valid():
                 request.session["uploaded-file"] = True
@@ -65,7 +67,6 @@ class UploadView(LoginRequiredMixin, View):
                         )
             # if "cancel-upload" in request.POST: Nothing to do, just redirect
 
-            del request.session["uploaded-file"]
             default_storage.delete(f"uploads/{request.user.pk}")
         return redirect(reverse("upload"))
 
@@ -101,6 +102,19 @@ def category_rules(request):
     context = {"category_formset": category_formset, "zipped_lists": zip(category_formset, rule_formsets)}
     return render(request, "category_rules.html", context)
 
+
+class TransactionView(LoginRequiredMixin, View):
+    def get(self, request):
+        # "preview" set during tabulator ajax query
+        if "preview" in request.GET:
+            txns = Transaction.objects.filter(user=request.user).values("pk", "amount", "category__name", "description", "date")
+            table_data = []
+            for txn in txns:
+                table_data.append(txn)
+            return JsonResponse(table_data, safe=False)
+        else:
+            return render(request, "transactions.html")
+    #def post(self, request):
 
 def register(request):
     auth_form = auth_forms.BaseUserCreationForm()
