@@ -6,7 +6,6 @@ from django.shortcuts import redirect
 from django.forms import inlineformset_factory
 from django.urls import reverse
 from django.http import JsonResponse
-from django.db.models import F
 from django.contrib.auth import login, forms as auth_forms
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.files.storage import default_storage

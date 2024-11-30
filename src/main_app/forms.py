@@ -3,6 +3,7 @@ import io
 import re
 from datetime import datetime
 from django import forms
+from django.db.models import Q
 from django.core.files.storage import default_storage
 from django.core.exceptions import ValidationError
 from .models import ParseRule, Category
@@ -144,6 +145,13 @@ class CategoryForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
+
+        if self.instance.pk:
+            self.fields["parent"].queryset = Category.objects.filter(
+                Q(user=self.user) & ~Q(pk=Category.get_uncategorized(self.user).pk) & ~Q(pk=self.instance.pk)
+            )
+        else:
+            self.fields["parent"].queryset = Category.objects.filter(Q(user=self.user) & ~Q(pk=Category.get_uncategorized(self.user).pk))
 
     def clean(self):
         cleaned_data = super().clean()

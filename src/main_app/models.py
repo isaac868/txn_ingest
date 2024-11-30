@@ -7,6 +7,7 @@ from django.db.models.signals import pre_delete
 
 class Category(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.SET_NULL)
     name = models.CharField(max_length=100)
     priority = models.IntegerField()
 
@@ -17,10 +18,10 @@ class Category(models.Model):
 
     @staticmethod
     def get_uncategorized(current_user):
-        return Category.objects.get_or_create(user=current_user, name="Uncategorized", defaults={"priority": -1})[0]
+        return Category.objects.get_or_create(user=current_user, name="Uncategorized", defaults={"priority": -1, "parent": None})[0]
 
     def __str__(self):
-        return self.user.username + ": " + self.name
+        return self.name
 
 
 class Transaction(models.Model):
