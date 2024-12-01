@@ -60,7 +60,7 @@ class FileSelectForm(forms.Form):
             except ParseRule.DoesNotExist:
                 raise ValidationError("The parse rule %(rule)s does not exist.", params={"rule": self.choice.label}, code="internal_error")
 
-            csv_rows = [["id", "date", "desc", "cat", "amt"]]
+            csv_rows = [["id", "date", "desc", "cat", "amt", "act"]]
             reader = csv.reader(file)
             if parse_rule.start_line:
                 for x in range(parse_rule.start_line):
@@ -102,6 +102,7 @@ class FileSelectForm(forms.Form):
                         description,
                         get_category(self.user, description).pk,
                         row[parse_rule.amount_col],
+                        parse_rule.account.pk
                     ]
                 )
                 row_index += 1
@@ -119,7 +120,6 @@ class FileSelectForm(forms.Form):
 
 class CategoryForm(forms.ModelForm):
     class Meta:
-        model = ParseRule
         exclude = ["user"]
 
     def __init__(self, *args, **kwargs):

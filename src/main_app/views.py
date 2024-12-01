@@ -11,9 +11,10 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.files.storage import default_storage
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
-from .models import ParseRule, CategoryRule, Category, Transaction
+from .models import ParseRule, CategoryRule, Category, Transaction, Account, Bank
 from .forms import ParseRuleForm, FileSelectForm, CategoryForm
 from .common import get_category
+
 
 @login_required
 def parse_rules(request):
@@ -37,6 +38,7 @@ class UploadView(LoginRequiredMixin, View):
                 table_data = []
                 for row in reader:
                     row["cat"] = Category.objects.get(pk=row["cat"]).name
+                    row["act"] = Category.objects.get(pk=row["act"]).name
                     table_data.append(row)
                 return JsonResponse(table_data, safe=False)
         elif "uploaded-file" in request.session and default_storage.exists(f"uploads/{request.user.pk}"):
@@ -62,6 +64,7 @@ class UploadView(LoginRequiredMixin, View):
                             date=datetime.fromisoformat(row["date"]),
                             description=row["desc"],
                             category=(Category.objects.get(pk=row["cat"])),
+                            account=(Account.objects.get(pk=row["act"])),
                             amount=row["amt"],
                         )
             # if "cancel-upload" in request.POST: Nothing to do, just redirect
@@ -105,18 +108,51 @@ def category_rules(request):
     return render(request, "category_rules.html", context)
 
 
+def get_account_formset(bank_form, data=None):
+    AccountFormset = inlineformset_factory(Bank, Account, extra=1, exclude=[])
+    if bank_form.instance.pk:
+        return AccountFormset(data, instance=bank_form.instance, prefix=f"bank-{bank_form.instance.pk}")
+    else:
+        return AccountFormset(data, prefix=f"new-bank-{bank_form.prefix}")
+
+
+@login_required
+def accounts(request):
+    BankFormset = inlineformset_factory(User, Bank, exclude=["user"], extra=1, can_delete=True)
+
+    bank_formset = BankFormset(instance=request.user)
+    account_formsets = [get_account_formset(bank_form) for bank_form in bank_formset]
+
+    if request.method == "POST":
+        bank_formset = BankFormset(request.POST, instance=request.user)
+        if bank_formset.is_valid():
+            account_formsets = [get_account_formset(bank_form, request.POST) for bank_form in bank_formset]
+
+            if all(formset.is_valid() for formset in account_formsets):
+                bank_formset.save()
+                for bank_form, account_formset in zip(bank_formset, account_formsets):
+                    account_formset.instance = bank_form.instance
+                    account_formset.save()
+                return redirect(reverse(accounts))
+
+    context = {"category_formset": bank_formset, "zipped_lists": zip(bank_formset, account_formsets)}
+    return render(request, "category_rules.html", context)
+
+
 class TransactionView(LoginRequiredMixin, View):
     def get(self, request):
         # "preview" set during tabulator ajax query
         if "preview" in request.GET:
-            txns = Transaction.objects.filter(user=request.user).values("pk", "amount", "category__name", "description", "date")
+            txns = Transaction.objects.filter(user=request.user).values("pk", "account__name", "amount", "category__name", "description", "date")
             table_data = []
             for txn in txns:
                 table_data.append(txn)
             return JsonResponse(table_data, safe=False)
         else:
             return render(request, "transactions.html")
-    #def post(self, request):
+
+    # def post(self, request):
+
 
 def register(request):
     auth_form = auth_forms.BaseUserCreationForm()

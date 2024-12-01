@@ -24,11 +24,35 @@ class Category(models.Model):
         return self.name
 
 
+class Bank(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["name", "user"], name="unique_bank_name")]
+
+    def __str__(self):
+        return self.name
+
+
+class Account(models.Model):
+    ACCOUNT_TYPES = {"savings": "Savings", "credit": "Credit", "chequing": "Chequing"}
+    CURRENCY_CHOICES = {"cad": "CAD", "usd": "USD", "eur": "EUR"}
+    bank = models.ForeignKey(Bank, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100)
+    account_type = models.CharField(max_length=50, choices=ACCOUNT_TYPES, default="chequing")
+    currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default="cad")
+
+    def __str__(self):
+        return self.name
+
+
 class Transaction(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     date = models.DateField()
     description = models.CharField(max_length=300)
     category = models.ForeignKey(Category, null=True, blank=True, on_delete=models.DO_NOTHING)
+    account = models.ForeignKey(Account, on_delete=models.CASCADE)
     amount = models.FloatField()
 
     def __str__(self):
@@ -43,6 +67,7 @@ def assign_uncategorized(sender, **kwargs):
 
 class ParseRule(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    account = models.ForeignKey(Account, on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
     date_fmt_str = models.CharField(max_length=30)
     csv_delim = models.CharField(null=True, blank=True, max_length=1)
