@@ -7,7 +7,11 @@
     {% if form.errors %}
     {{ form.errors }}
     {% endif %}
+    {% if login_page %}
     <input type="submit" value="Login">
+    {% else %}
+    <input type="submit" value="Register">
+    {% endif %}
 </form>
 
 {% endblock %}

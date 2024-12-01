@@ -126,4 +126,4 @@ def register(request):
             new_user = auth_form.save()
             login(request, new_user)
             return redirect("upload")
-    return render(request, "registration/register.html", {"form": auth_form})
+    return render(request, "registration/login.html", {"form": auth_form})
