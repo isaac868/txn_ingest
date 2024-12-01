@@ -1,12 +1,12 @@
 import csv
 import io
-import re
 from datetime import datetime
 from django import forms
 from django.db.models import Q
 from django.core.files.storage import default_storage
 from django.core.exceptions import ValidationError
 from .models import ParseRule, Category
+from .common import get_category
 
 
 class ParseRuleForm(forms.ModelForm):
@@ -49,26 +49,6 @@ class FileSelectForm(forms.Form):
 
         self.validate_upload(io.TextIOWrapper(cleaned_data["file"], encoding="utf-8"), cleaned_data["choice"])
         return cleaned_data
-
-    @staticmethod
-    def evaluate_rule(rule, description_text):
-        match rule.match_type:
-            case "equals":
-                return rule.match_text.lower() == description_text.lower()
-            case "contains":
-                return rule.match_text.lower() in description_text.lower()
-            case "regex":
-                return re.search(rule.match_text, description_text) is not None
-            case "starts_with":
-                return description_text.lower().startswith(rule.match_text.lower())
-            case "ends_with":
-                return description_text.lower().endswith(rule.match_text.lower())
-
-    def get_category(self, description_text):
-        for category in Category.objects.filter(user=self.user):
-            if any(FileSelectForm.evaluate_rule(rule, description_text) for rule in category.rule_set.all()):
-                return category
-        return Category.get_uncategorized(self.user)
 
     def validate_upload(self, file, choice_idx):
         """Validate the uploaded file given the selected parse rule. choice_idx corresponds to the pk of the parse rule."""
@@ -120,7 +100,7 @@ class FileSelectForm(forms.Form):
                         row_index,
                         datetime.strptime(row[parse_rule.date_col], parse_rule.date_fmt_str).isoformat(),
                         description,
-                        FileSelectForm.get_category(self, description).pk,
+                        get_category(self.user, description).pk,
                         row[parse_rule.amount_col],
                     ]
                 )

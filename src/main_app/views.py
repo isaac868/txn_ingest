@@ -13,7 +13,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from .models import ParseRule, CategoryRule, Category, Transaction
 from .forms import ParseRuleForm, FileSelectForm, CategoryForm
-
+from .common import get_category
 
 @login_required
 def parse_rules(request):
@@ -96,6 +96,9 @@ def category_rules(request):
                 for category_form, rule_formset in zip(category_formset, rule_formsets):
                     rule_formset.instance = category_form.instance
                     rule_formset.save()
+                for txn in Transaction.objects.filter(user=request.user):
+                    txn.category = get_category(request.user, txn.description)
+                    txn.save()
                 return redirect(reverse(category_rules))
 
     context = {"category_formset": category_formset, "zipped_lists": zip(category_formset, rule_formsets)}
