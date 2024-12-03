@@ -1,5 +1,6 @@
-from django.urls import path, include
+from django.urls import path, reverse_lazy
 from django.contrib.auth import views as auth_views
+from django.views.generic.base import RedirectView
 from . import views
 
 urlpatterns = [
@@ -11,4 +12,5 @@ urlpatterns = [
     path("accounts/login/", auth_views.LoginView.as_view(next_page="upload", extra_context={"login_page": True}), name="login"),
     path("accounts/logout/", auth_views.LogoutView.as_view(next_page="login"), name="logout"),
     path("accounts/register/", views.register, name="register"),
+    path("", RedirectView.as_view(url=reverse_lazy("upload")), name="index"),
 ]
