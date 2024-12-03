@@ -102,7 +102,7 @@ class FileSelectForm(forms.Form):
                         description,
                         get_category(self.user, description).pk,
                         row[parse_rule.amount_col],
-                        parse_rule.account.pk
+                        parse_rule.account.pk,
                     ]
                 )
                 row_index += 1

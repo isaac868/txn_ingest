@@ -4,7 +4,17 @@
 
 <div id="txn-table"></div>
 
+<input type="button" value="Save changes" onclick=confirmChanges()>
+
+{{ override_values|json_script:"options" }}
+{% csrf_token %}
 <script>
+    var categories = JSON.parse(document.getElementById('options').textContent)
+    var categoryNames = categories.map(tuple => tuple[1])
+    var categoryMap = new Map()
+    for (category of categories){
+        categoryMap.set(category[1], category[0])
+    }
     var table = new Tabulator("#txn-table", {
         dependencies:{
             DateTime:luxon.DateTime,
@@ -14,6 +24,7 @@
         ajaxParams:{ preview: "True" },
         movableRows:false, 
         rowHeader:{formatter:"rowSelection", titleFormatter:"plaintext", title:"Delete", hozAlign:"center", headerSort:false, resizable:false},
+        layout: "fitData",
         columns:[
             {title:"Date", field: "date", formatter:"datetime", formatterParams:{
                 inputFormat:"iso",
@@ -23,10 +34,53 @@
             }},
             {title:"Account", field: "account__name", sorter:"string"},
             {title:"Description", field: "description", sorter:"string"},
-            {title:"Category", field: "category__name", sorter:"string"},
             {title:"Amount", field: "amount", sorter:"number"},
+            {title:"Category", field: "category__name", sorter:"string", editor:"list", validator:"required", editorParams:{
+                values:categoryNames,
+                allowEmpty: false,
+            }},
+            {title:"Category Override", field:"category_override", sorter:"boolean", formatter:"tickCross", editor:true},
         ],
     });
+
+    table.on("cellEdited", function(cell){
+        if(cell.getField() == "category__name"){
+            cell.getRow().update({"category_override": true})
+        }
+        if(cell.getField() == "category_override"){
+            cell.getRow().getCell("category__name").restoreInitialValue()
+        }
+    });
+
+    async function confirmChanges(){
+        var deletedRowIndices = table.getSelectedRows().map(row => row.getIndex())
+        var editedRows = table.getEditedCells().map(cell => cell.getRow())
+        var uniqueEditedRows = []
+        for (row of editedRows){
+            var uniqueRowIndices = uniqueEditedRows.map(row => row.getIndex())
+            var rowIndex = row.getIndex()
+            if(!uniqueRowIndices.includes(rowIndex) && !deletedRowIndices.includes(rowIndex)){
+                uniqueEditedRows.push(row)
+            }
+        }
+        
+        var formattedChanges = uniqueEditedRows.map(row => 
+            { return {pk: row.getIndex(), category: categoryMap.get(row.getCell("category__name").getValue()), override: row.getCell("category_override").getValue()} 
+        })
+
+        const response = await fetch("{% url "transactions" %}", { method: "POST",
+        body: JSON.stringify({ changes: formattedChanges, deleted: deletedRowIndices }),
+        headers: {
+          'X-CSRFToken': document.querySelector("[name=csrfmiddlewaretoken]").value,
+          "Content-Type": "application/json",
+        }})
+        
+        if(response.ok){
+            table.replaceData()
+        } else{
+            console.error("Response status: " + response.status);
+        }
+    }
 </script>
 
 {% endblock %}

@@ -1,11 +1,13 @@
 from django.shortcuts import render
 import csv
+import json
 from datetime import datetime
 from django.views import View
 from django.shortcuts import redirect
 from django.forms import inlineformset_factory
 from django.urls import reverse
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
+from django.db.models import Q
 from django.contrib.auth import login, forms as auth_forms
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.files.storage import default_storage
@@ -38,7 +40,7 @@ class UploadView(LoginRequiredMixin, View):
                 table_data = []
                 for row in reader:
                     row["cat"] = Category.objects.get(pk=row["cat"]).name
-                    row["act"] = Category.objects.get(pk=row["act"]).name
+                    row["act"] = Account.objects.get(pk=row["act"]).name
                     table_data.append(row)
                 return JsonResponse(table_data, safe=False)
         elif "uploaded-file" in request.session and default_storage.exists(f"uploads/{request.user.pk}"):
@@ -66,6 +68,7 @@ class UploadView(LoginRequiredMixin, View):
                             category=(Category.objects.get(pk=row["cat"])),
                             account=(Account.objects.get(pk=row["act"])),
                             amount=row["amt"],
+                            category_override=False,
                         )
             # if "cancel-upload" in request.POST: Nothing to do, just redirect
 
@@ -99,7 +102,7 @@ def category_rules(request):
                 for category_form, rule_formset in zip(category_formset, rule_formsets):
                     rule_formset.instance = category_form.instance
                     rule_formset.save()
-                for txn in Transaction.objects.filter(user=request.user):
+                for txn in Transaction.objects.filter(Q(user=request.user) & Q(category_override=False)):
                     txn.category = get_category(request.user, txn.description)
                     txn.save()
                 return redirect(reverse(category_rules))
@@ -143,15 +146,35 @@ class TransactionView(LoginRequiredMixin, View):
     def get(self, request):
         # "preview" set during tabulator ajax query
         if "preview" in request.GET:
-            txns = Transaction.objects.filter(user=request.user).values("pk", "account__name", "amount", "category__name", "description", "date")
+            txns = Transaction.objects.filter(user=request.user).values(
+                "pk", "account__name", "amount", "category__name", "description", "date", "category_override"
+            )
             table_data = []
             for txn in txns:
                 table_data.append(txn)
             return JsonResponse(table_data, safe=False)
         else:
-            return render(request, "transactions.html")
+            categories = [(cat.pk, cat.name) for cat in Category.objects.filter(user=request.user)]
+            return render(request, "transactions.html", {"override_values": categories})
 
-    # def post(self, request):
+    def post(self, request):
+        change_data = json.loads(request.body)
+        try:
+            changed_txns = Transaction.objects.filter(Q(user=request.user) & Q(pk__in=[item["pk"] for item in change_data["changes"]]))
+            for change in change_data["changes"]:
+                changed_txn = changed_txns.get(pk=change["pk"])
+                if change["override"]:
+                    changed_txn.category = Category.objects.filter(user__pk=request.user.pk).get(pk=change["category"])
+                else:
+                    changed_txn.category = get_category(request.user, changed_txn.description)
+                changed_txn.category_override = change["override"]
+                changed_txn.save()
+
+            deleted_rows = change_data["deleted"]
+            Transaction.objects.filter(Q(pk__in=deleted_rows) & Q(user=request.user)).delete()
+            return HttpResponse(status=200)
+        except Exception as e:
+            return HttpResponse(status=400)
 
 
 def register(request):

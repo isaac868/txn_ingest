@@ -52,8 +52,12 @@ class Transaction(models.Model):
     date = models.DateField()
     description = models.CharField(max_length=300)
     category = models.ForeignKey(Category, null=True, blank=True, on_delete=models.DO_NOTHING)
+    category_override = models.BooleanField()
     account = models.ForeignKey(Account, on_delete=models.CASCADE)
     amount = models.FloatField()
+
+    class Meta:
+        ordering = ["date", "description"]
 
     def __str__(self):
         return self.description
