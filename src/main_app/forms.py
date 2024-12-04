@@ -5,7 +5,7 @@ from django import forms
 from django.db.models import Q
 from django.core.files.storage import default_storage
 from django.core.exceptions import ValidationError
-from .models import ParseRule, Category
+from .models import ParseRule, Category, Account
 from .common import get_category
 
 
@@ -14,21 +14,23 @@ class ParseRuleForm(forms.ModelForm):
         model = ParseRule
         exclude = ["user"]
         labels = {
-            "name": "Name *",
-            "date_fmt_str": "Date format string *",
+            "name": "Name",
+            "date_fmt_str": "Date format string",
             "csv_delim": "CSV delimiter",
             "start_line": "CSV start line",
-            "date_col": "Date column *",
+            "date_col": "Date column",
             "desc_col": "Description column",
             "sub_desc_col": "Sub-description column",
-            "amount_col": "Amount column *",
+            "amount_col": "Amount column",
             "txn_type_col": "Credit/Debit indicator",
         }
 
     def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs["class"] = "form-control"
+        self.fields["account"].queryset = Account.objects.filter(bank__user=self.user)
 
 
 class FileSelectForm(forms.Form):

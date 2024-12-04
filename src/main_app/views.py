@@ -22,9 +22,9 @@ from .common import get_category
 def parse_rules(request):
     RuleFormset = inlineformset_factory(User, ParseRule, form=ParseRuleForm, extra=1, can_delete=True)
 
-    rule_formset = RuleFormset(instance=request.user)
+    rule_formset = RuleFormset(instance=request.user, form_kwargs={"user": request.user})
     if request.method == "POST":
-        rule_formset = RuleFormset(request.POST, instance=request.user)
+        rule_formset = RuleFormset(request.POST, instance=request.user, form_kwargs={"user": request.user})
         if rule_formset.is_valid():
             rule_formset.save()
             return redirect(reverse(parse_rules))
@@ -164,7 +164,7 @@ class TransactionView(LoginRequiredMixin, View):
             for change in change_data["changes"]:
                 changed_txn = changed_txns.get(pk=change["pk"])
                 if change["override"]:
-                    changed_txn.category = Category.objects.filter(user__pk=request.user.pk).get(pk=change["category"])
+                    changed_txn.category = Category.objects.filter(user=request.user).get(pk=change["category"])
                 else:
                     changed_txn.category = get_category(request.user, changed_txn.description)
                 changed_txn.category_override = change["override"]
