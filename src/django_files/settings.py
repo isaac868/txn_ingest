@@ -11,9 +11,8 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
-from os import environ
-import sys
-TEST = 'test' in sys.argv
+import os
+USE_SQLITE_FOR_TESTS = os.getenv("USE_SQLITE_FOR_TESTS", "false").lower() == "true"
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -85,14 +84,14 @@ DATABASES = (
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-if TEST else {
+if USE_SQLITE_FOR_TESTS else {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': environ.get('DJANGO_DB_NAME'),
-        'USER': environ.get('DJANGO_DB_USER'),
-        'PASSWORD': environ.get('DJANGO_DB_PASS'),
-        'HOST': environ.get('DJANGO_DB_HOST'),
-        'PORT': environ.get('DJANGO_DB_PORT')
+        'NAME': os.environ.get('DJANGO_DB_NAME'),
+        'USER': os.environ.get('DJANGO_DB_USER'),
+        'PASSWORD': os.environ.get('DJANGO_DB_PASS'),
+        'HOST': os.environ.get('DJANGO_DB_HOST'),
+        'PORT': os.environ.get('DJANGO_DB_PORT')
     }
 })
 
