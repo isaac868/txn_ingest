@@ -34,6 +34,7 @@ class ParseRuleForm(forms.ModelForm):
 
     def clean_date_fmt_str(self):
         fmt_str = self.cleaned_data["date_fmt_str"]
+        print("TEST: " + fmt_str)
         try:
             datetime.now().strftime(fmt_str)
         except:
