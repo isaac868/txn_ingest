@@ -30,7 +30,7 @@ class ParseRuleTests(TestCase):
             "user": self.user1,
             "account": self.account2.pk,
             "name": "bad-parse-rule",
-            "date_fmt_str": "%Q-%x-%e",
+            "date_fmt_str": "%r-%t-%o",
             "date_col": 0,
             "desc_col": 0,
             "amount_col": 1,
