@@ -32,6 +32,21 @@ class ParseRuleForm(forms.ModelForm):
             field.widget.attrs["class"] = "form-control"
         self.fields["account"].queryset = Account.objects.filter(bank__user=self.user)
 
+    def clean_date_fmt_str(self):
+        fmt_str = self.cleaned_data["date_fmt_str"]
+        try:
+            datetime.now().strftime(fmt_str)
+        except:
+            raise ValidationError("Please provide a valid Python date format string.", code="input_error")
+        return fmt_str
+
+    def clean(self):
+        cleaned_data = super().clean()
+        cols = [field_value for (field_name, field_value) in cleaned_data.items() if isinstance(field_value, int) and field_name.endswith("_col")]
+        if len(cols) != len(set(cols)):
+            raise ValidationError("The same column index cannot be used more than once.", code="input_error")
+        return cleaned_data
+
 
 class FileSelectForm(forms.Form):
 
