@@ -63,6 +63,12 @@ class Transaction(models.Model):
         return self.description
 
 
+@receiver(pre_delete, sender=User)
+def delete_uncategorized(sender, **kwargs):
+    deleted_user = kwargs["instance"]
+    Category.objects.filter(user=deleted_user).delete()
+
+
 @receiver(pre_delete, sender=Category)
 def assign_uncategorized(sender, **kwargs):
     category = kwargs["instance"]

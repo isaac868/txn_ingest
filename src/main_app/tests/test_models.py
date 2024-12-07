@@ -27,7 +27,8 @@ class ModelTests(TestCase):
     def test_category_creation(self):
         Category.objects.create(user=self.user1, name="test", priority=1)
         Category.objects.create(user=self.user2, name="test", priority=1)
-        self.assertRaises(IntegrityError, Category.objects.create, user=self.user1, name="test", priority=1)
+        with self.assertRaises(IntegrityError):
+            Category.objects.create(user=self.user1, name="test", priority=1)
 
     def test_uncategorized(self):
         uc1 = Category.get_uncategorized(self.user1)
@@ -46,10 +47,26 @@ class ModelTests(TestCase):
 
     def test_bank_creation(self):
         Bank.objects.create(user=self.user2, name="bnk")
-        self.assertRaises(IntegrityError, Bank.objects.create, user=self.user1, name="bnk")
+        with self.assertRaises(IntegrityError):
+            Bank.objects.create(user=self.user1, name="bnk")
 
-    def test_parse_rule_creation(self):
+    def test_parse_rule_creation(self):    
+        # Check defaults for optional fields
+        good_data = {
+            "user": self.user1,
+            "account": self.account.pk,
+            "name": "good-parse-rule",
+            "date_fmt_str": "%Y-%d-%m",
+            "date_col": 0,
+            "desc_col": 1,
+            "amount_col": 3,
+        }
+        pr = ParseRule.objects.create(user= self.user1,account=self.account,name="good-parse-rule",date_fmt_str="%Y-%d-%m",date_col= 0,desc_col= 1,amount_col= 3)
+        self.assertEqual(pr.csv_delim, ",")
+        self.assertEqual(pr.start_line, 0)
+        self.assertEqual(pr.sub_desc_col, None)
+        self.assertEqual(pr.txn_type_col, None)
+
         ParseRule.objects.create(user=self.user2, account=self.account, name="prule", date_fmt_str="", date_col=0, desc_col=0, amount_col=0)
-        self.assertRaises(
-            IntegrityError, ParseRule.objects.create, user=self.user1, account=self.account, name="prule", date_fmt_str="", date_col=0, desc_col=0, amount_col=0
-        )
+        with self.assertRaises(IntegrityError):
+            ParseRule.objects.create(user=self.user1, account=self.account, name="prule", date_fmt_str="", date_col=0, desc_col=0, amount_col=0)
