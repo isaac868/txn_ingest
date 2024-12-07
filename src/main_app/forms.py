@@ -36,7 +36,7 @@ class ParseRuleForm(forms.ModelForm):
         fmt_str = self.cleaned_data["date_fmt_str"]
         print("TEST: " + fmt_str)
         try:
-            datetime.now().strftime(fmt_str)
+            print(datetime.now().strftime(fmt_str))
         except:
             raise ValidationError("Please provide a valid Python date format string.", code="input_error")
         return fmt_str
