@@ -29,17 +29,9 @@ class ParseRuleForm(forms.ModelForm):
         self.user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
+            field.label_suffix = ""
             field.widget.attrs["class"] = "form-control"
         self.fields["account"].queryset = Account.objects.filter(bank__user=self.user)
-
-    def clean_date_fmt_str(self):
-        fmt_str = self.cleaned_data["date_fmt_str"]
-        print("TEST: " + fmt_str)
-        try:
-            print(datetime.now().strftime(fmt_str))
-        except:
-            raise ValidationError("Please provide a valid Python date format string.", code="input_error")
-        return fmt_str
 
     def clean(self):
         cleaned_data = super().clean()

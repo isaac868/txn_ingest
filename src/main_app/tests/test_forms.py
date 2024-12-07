@@ -42,5 +42,4 @@ class ParseRuleTests(TestCase):
         self.assertFalse(bad_rule.is_valid())
         # Check individual field errors
         self.assertFormError(bad_rule, "account", "Select a valid choice. That choice is not one of the available choices.")
-        self.assertFormError(bad_rule, "date_fmt_str", "Please provide a valid Python date format string.")
         self.assertFormError(bad_rule, None, "The same column index cannot be used more than once.")
