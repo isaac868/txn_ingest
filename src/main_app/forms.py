@@ -1,7 +1,9 @@
 import csv
 import io
+import os
 from datetime import datetime
 from django import forms
+from django.conf import settings
 from django.db.models import Q
 from django.core.files.storage import default_storage
 from django.core.exceptions import ValidationError
@@ -117,9 +119,12 @@ class FileSelectForm(forms.Form):
                 )
                 row_index += 1
 
-            with default_storage.open(f"uploads/{self.user.pk}", "w") as file:
+            if not os.path.exists(settings.MEDIA_ROOT):
+                os.makedirs(settings.MEDIA_ROOT)
+            with default_storage.open(f"{self.user.pk}", "w") as file:
                 writer = csv.writer(file)
                 writer.writerows(csv_rows)
+                file.close()
         except ValidationError:
             raise
         except IndexError:
