@@ -52,15 +52,6 @@ class ModelTests(TestCase):
 
     def test_parse_rule_creation(self):    
         # Check defaults for optional fields
-        good_data = {
-            "user": self.user1,
-            "account": self.account.pk,
-            "name": "good-parse-rule",
-            "date_fmt_str": "%Y-%d-%m",
-            "date_col": 0,
-            "desc_col": 1,
-            "amount_col": 3,
-        }
         pr = ParseRule.objects.create(user= self.user1,account=self.account,name="good-parse-rule",date_fmt_str="%Y-%d-%m",date_col= 0,desc_col= 1,amount_col= 3)
         self.assertEqual(pr.csv_delim, ",")
         self.assertEqual(pr.start_line, 0)

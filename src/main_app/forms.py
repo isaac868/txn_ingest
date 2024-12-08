@@ -84,7 +84,7 @@ class FileSelectForm(forms.Form):
                 # Check all rows have same number of columns
                 if csv_col_num != len(row) and csv_col_num != 0:
                     raise ValidationError(
-                        "Error, number of CSV columns on line %(line)s does not match other rows.", params={"line": row_index}, code="input_error"
+                        "Invalid CSV file, all rows must have the same number of columns.", params={"line": row_index}, code="input_error"
                     )
                 csv_col_num = len(row)
 

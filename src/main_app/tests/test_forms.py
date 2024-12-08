@@ -61,18 +61,25 @@ class FileSelectFormTests(TestCase):
             user=self.user2, account=self.account, name="prule2", date_fmt_str="%y-%d-%m", date_col=0, desc_col=1, amount_col=2
         )
 
-    def test_only_user_prules_allowed(self):
-        file_name = f"valid{self.prule1.date_fmt_str}{self.prule1.date_col}{self.prule1.desc_col}{self.prule1.amount_col}.csv"
+    def get_mock_file(self, file_name):
         with open(f"{os.path.dirname(__file__)}/test_data/" + file_name, "rb") as valid_file:
-            mock_file = SimpleUploadedFile(
+             return SimpleUploadedFile(
                 name=file_name,
                 content=valid_file.read(),
                 content_type="text/csv",
             )
-            valid_form = FileSelectForm({"choice": self.prule1.pk}, {"file": mock_file}, user=self.user1)
-            var = valid_form.is_valid()
-            self.assertTrue(valid_form.is_valid())
 
-            invalid_form = FileSelectForm({"choice": self.prule2.pk}, {"file": mock_file}, user=self.user1)
-            self.assertFalse(invalid_form.is_valid())
-            self.assertFormError(invalid_form, "choice", f"Select a valid choice. {self.prule2.pk} is not one of the available choices.")
+    def test_only_user_prules_allowed(self):
+        mock_file = self.get_mock_file(f"valid1.csv")
+        valid_form = FileSelectForm({"choice": self.prule1.pk}, {"file": mock_file}, user=self.user1)
+        self.assertTrue(valid_form.is_valid())
+
+        invalid_form = FileSelectForm({"choice": self.prule2.pk}, {"file": mock_file}, user=self.user1)
+        self.assertFalse(invalid_form.is_valid())
+        self.assertFormError(invalid_form, "choice", f"Select a valid choice. {self.prule2.pk} is not one of the available choices.")
+
+    def test_prule_column_num_validation(self):
+        mock_file = self.get_mock_file(f"invalid1.csv")
+        invalid_form = FileSelectForm({"choice": self.prule1.pk}, {"file": mock_file}, user=self.user1)
+        self.assertFalse(invalid_form.is_valid())
+        self.assertFormError(invalid_form, None, "Invalid CSV file, all rows must have the same number of columns.")
