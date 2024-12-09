@@ -1,7 +1,6 @@
 services:
   txn_ingest:
     build: .
-    container_name: txn_ingest
     ports:
       - "8000:8000"
     environment:
