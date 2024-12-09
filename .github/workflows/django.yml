@@ -27,7 +27,8 @@ jobs:
         pip install -r requirements.txt
     - name: Run Tests
       env:
-        USE_SQLITE_FOR_TESTS: true
+        USE_SQLITE_FOR_TESTS: True
+        DJANGO_DEBUG: True
       run: |
         python src/manage.py makemigrations main_app
         python src/manage.py migrate main_app

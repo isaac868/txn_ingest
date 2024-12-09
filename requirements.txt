@@ -1,2 +1,5 @@
 Django>=5.1.4
 psycopg[binary]
+django-crispy-forms
+crispy-bootstrap5
+gunicorn
