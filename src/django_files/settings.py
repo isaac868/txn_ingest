@@ -26,7 +26,9 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
 allowed_hosts_env = os.getenv('DJANGO_ALLOWED_HOSTS', '')
+trusted_origins_env = os.getenv('DJANGO_TRUSTED_ORIGINS', '')
 ALLOWED_HOSTS = allowed_hosts_env.split(',') if allowed_hosts_env else []
+CSRF_TRUSTED_ORIGINS = trusted_origins_env.split(',') if trusted_origins_env else []
 
 
 # Application definition
@@ -143,6 +145,3 @@ MEDIA_ROOT = 'uploads'
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 
 CRISPY_TEMPLATE_PACK = "bootstrap5"
-
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
