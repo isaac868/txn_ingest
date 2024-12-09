@@ -1,0 +1,37 @@
+services:
+  txn_ingest:
+    build: .
+    container_name: txn_ingest
+    ports:
+      - "8000:8000"
+    environment:
+      - DJANGO_DB_NAME=${POSTGRES_DB_NAME}
+      - DJANGO_DB_USER=${POSTGRES_USER}
+      - DJANGO_DB_PASS=${POSTGRES_PASSWORD}
+      - DJANGO_DB_HOST=db
+      - DJANGO_DB_PORT=5432
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+    depends_on:
+      - db
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - txn_ingest
+
+  db:
+    image: postgres:17
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB_NAME}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+
+volumes:
+  postgres_data:
