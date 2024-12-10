@@ -87,6 +87,7 @@ class ParseRule(models.Model):
     sub_desc_col = models.IntegerField(null=True, blank=True, validators=[MinValueValidator(0)])
     amount_col = models.IntegerField(validators=[MinValueValidator(0)])
     txn_type_col = models.IntegerField(null=True, blank=True, validators=[MinValueValidator(0)])
+    negate_amount = models.BooleanField(default=False)
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["name", "user"], name="unique_parse_rule_name")]

@@ -25,6 +25,7 @@ class ParseRuleForm(forms.ModelForm):
             "sub_desc_col": "Sub-description column",
             "amount_col": "Amount column",
             "txn_type_col": "Credit/Debit indicator",
+            "negate_amount": "Negate Amount",
         }
 
     def __init__(self, *args, **kwargs):
@@ -32,7 +33,6 @@ class ParseRuleForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.label_suffix = ""
-            field.widget.attrs["class"] = "form-control"
         self.fields["account"].queryset = Account.objects.filter(bank__user=self.user)
 
     def clean(self):
@@ -114,7 +114,7 @@ class FileSelectForm(forms.Form):
                         datetime.strptime(row[parse_rule.date_col], parse_rule.date_fmt_str).isoformat(),
                         description,
                         get_category(self.user, description).pk,
-                        row[parse_rule.amount_col],
+                        float(row[parse_rule.amount_col]) * (-1 if parse_rule.negate_amount else 1),
                         parse_rule.account.pk,
                     ]
                 )
