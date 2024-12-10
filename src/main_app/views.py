@@ -60,16 +60,23 @@ class UploadView(LoginRequiredMixin, View):
             if "save-upload" in request.POST:
                 with default_storage.open(f"{request.user.pk}", "r") as file:
                     reader = csv.DictReader(file)
+
+                    cats = { cat.pk: cat for cat in Category.objects.filter(user=request.user)}
+                    acts = { act.pk: act for act in Account.objects.filter(bank__user=request.user)}
+                    txns = []
+
                     for row in reader:
-                        Transaction.objects.create(
+                        txn = Transaction(
                             user=request.user,
                             date=datetime.fromisoformat(row["date"]),
                             description=row["desc"],
-                            category=(Category.objects.get(pk=row["cat"])),
-                            account=(Account.objects.get(pk=row["act"])),
+                            category=cats.get(int(row["cat"])),
+                            account=acts.get(int(row["act"])),
                             amount=row["amt"],
                             category_override=False,
                         )
+                        txns.append(txn)
+                    Transaction.objects.bulk_create(txns)
             # if "cancel-upload" in request.POST: Nothing to do, just redirect
 
             default_storage.delete(f"{request.user.pk}")
