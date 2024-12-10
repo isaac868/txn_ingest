@@ -34,8 +34,8 @@ def parse_rules(request):
 class UploadView(LoginRequiredMixin, View):
     def get(self, request):
         # "preview" set during tabulator ajax query
-        if "preview" in request.GET and default_storage.exists(f"uploads/{request.user.pk}"):
-            with default_storage.open(f"uploads/{request.user.pk}", "r") as file:
+        if "preview" in request.GET and default_storage.exists(f"{request.user.pk}"):
+            with default_storage.open(f"{request.user.pk}", "r") as file:
                 reader = csv.DictReader(file)
                 table_data = []
                 for row in reader:
@@ -43,7 +43,7 @@ class UploadView(LoginRequiredMixin, View):
                     row["act"] = Account.objects.get(pk=row["act"]).name
                     table_data.append(row)
                 return JsonResponse(table_data, safe=False)
-        elif "uploaded-file" in request.session and default_storage.exists(f"uploads/{request.user.pk}"):
+        elif "uploaded-file" in request.session and default_storage.exists(f"{request.user.pk}"):
             del request.session["uploaded-file"]
             return render(request, "upload_preview.html")
         else:
@@ -58,7 +58,7 @@ class UploadView(LoginRequiredMixin, View):
                 return render(request, "upload.html", {"form": form})
         else:
             if "save-upload" in request.POST:
-                with default_storage.open(f"uploads/{request.user.pk}", "r") as file:
+                with default_storage.open(f"{request.user.pk}", "r") as file:
                     reader = csv.DictReader(file)
                     for row in reader:
                         Transaction.objects.create(
@@ -72,7 +72,7 @@ class UploadView(LoginRequiredMixin, View):
                         )
             # if "cancel-upload" in request.POST: Nothing to do, just redirect
 
-            default_storage.delete(f"uploads/{request.user.pk}")
+            default_storage.delete(f"{request.user.pk}")
         return redirect(reverse("upload"))
 
 

@@ -59,7 +59,7 @@ class FileSelectForm(forms.Form):
         if self.errors:
             return cleaned_data
 
-        self.validate_upload(io.TextIOWrapper(cleaned_data["file"], encoding="utf-8"), cleaned_data["choice"])
+        self.validate_upload(io.TextIOWrapper(cleaned_data["file"], encoding="utf-8-sig"), cleaned_data["choice"])
         return cleaned_data
 
     def validate_upload(self, file, choice_idx):
@@ -92,9 +92,10 @@ class FileSelectForm(forms.Form):
                 try:
                     datetime.strptime(row[parse_rule.date_col], parse_rule.date_fmt_str)
                 except ValueError:
-                    raise ValidationError("Error parsing time on %(line)s.", params={"line": row_index}, code="input_error")
+                    raise ValidationError("Error parsing time on line %(line)s.", params={"line": row_index}, code="input_error")
 
                 # Check the column pointed to by amount_col is actually a number
+                row[parse_rule.amount_col] = row[parse_rule.amount_col].replace("$","").replace(",","")
                 try:
                     float(row[parse_rule.amount_col])
                 except ValueError:
