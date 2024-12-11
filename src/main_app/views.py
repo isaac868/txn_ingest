@@ -109,9 +109,10 @@ def category_rules(request):
                 for category_form, rule_formset in zip(category_formset, rule_formsets):
                     rule_formset.instance = category_form.instance
                     rule_formset.save()
-                for txn in Transaction.objects.filter(Q(user=request.user) & Q(category_override=False)):
+                txns = Transaction.objects.filter(Q(user=request.user) & Q(category_override=False))
+                for txn in txns:
                     txn.category = get_category(request.user, txn.description)
-                    txn.save()
+                Transaction.objects.bulk_update(txns, ["category"])
                 return redirect(reverse(category_rules))
 
     context = {"category_formset": category_formset, "zipped_lists": zip(category_formset, rule_formsets)}
