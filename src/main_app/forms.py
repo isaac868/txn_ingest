@@ -8,7 +8,7 @@ from django.db.models import Q
 from django.core.files.storage import default_storage
 from django.core.exceptions import ValidationError
 from .models import ParseRule, Category, Account
-from .common import get_category
+from .common import get_category, get_user_categorization_dicts
 
 
 class ParseRuleForm(forms.ModelForm):
@@ -80,6 +80,7 @@ class FileSelectForm(forms.Form):
                 row_index = parse_rule.start_line
 
             csv_col_num = 0
+            categorization_dicts = get_user_categorization_dicts(self.user)
             for row in reader:
                 # Check all rows have same number of columns
                 if csv_col_num != len(row) and csv_col_num != 0:
@@ -113,7 +114,7 @@ class FileSelectForm(forms.Form):
                         row_index,
                         datetime.strptime(row[parse_rule.date_col], parse_rule.date_fmt_str).isoformat(),
                         description,
-                        get_category(self.user, description).pk,
+                        get_category(categorization_dicts, description).pk,
                         float(row[parse_rule.amount_col]) * (-1 if parse_rule.negate_amount else 1),
                         parse_rule.account.pk,
                     ]

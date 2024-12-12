@@ -15,7 +15,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from .models import ParseRule, CategoryRule, Category, Transaction, Account, Bank
 from .forms import ParseRuleForm, FileSelectForm, CategoryForm
-from .common import get_category
+from .common import get_category, get_user_categorization_dicts
 
 
 @login_required
@@ -110,8 +110,9 @@ def category_rules(request):
                     rule_formset.instance = category_form.instance
                     rule_formset.save()
                 txns = Transaction.objects.filter(Q(user=request.user) & Q(category_override=False))
+                categorization_dicts = get_user_categorization_dicts(request.user)
                 for txn in txns:
-                    txn.category = get_category(request.user, txn.description)
+                    txn.category = get_category(categorization_dicts, txn.description)
                 Transaction.objects.bulk_update(txns, ["category"])
                 return redirect(reverse(category_rules))
 
