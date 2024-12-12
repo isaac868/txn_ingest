@@ -92,7 +92,7 @@ class FileSelectForm(forms.Form):
                 try:
                     datetime.strptime(row[parse_rule.date_col], parse_rule.date_fmt_str)
                 except ValueError:
-                    raise ValidationError("Error parsing time on line %(line)s.", params={"line": row_index}, code="input_error")
+                    raise ValidationError("Error parsing date on line %(line)s.", params={"line": row_index}, code="input_error")
 
                 # Check the column pointed to by amount_col is actually a number
                 row[parse_rule.amount_col] = row[parse_rule.amount_col].replace("$","").replace(",","")
@@ -130,6 +130,8 @@ class FileSelectForm(forms.Form):
             raise
         except IndexError:
             raise ValidationError("Indexing error present on line %(line)s.", params={"line": row_index}, code="input_error")
+        except UnicodeDecodeError:
+            raise ValidationError("The uploaded file contains invalid utf-8 bytes.", code="input_error")
         except Exception as e:
             raise ValidationError("Internal server error.", code="internal_error")
 
