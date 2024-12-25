@@ -1,17 +1,86 @@
 {% extends "base.html" %}
+{% load widget_tweaks %}
+{% load static %}
+
+{% block header %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+<style>
+    .category-container {
+        width: 50vw;
+        margin: auto;
+    }
+    .rotated {
+        transform: rotate(180deg);
+    }
+</style>
+{% endblock %}    
 
 {% block content %}
-<form method="POST">
-    {% csrf_token %}
+
+<div class="category-container">
+    <form method="POST">
+        {% csrf_token %}
     
-    {{ category_formset.management_form }}
-    {% for category, rules in zipped_lists %}
-    ------------------------------------------
-        {{ category }}
-        {{ rules }}
-    ------------------------------------------
-    {% endfor %}
-    <input type="submit" value="Save">
-</form>
+        {{ category_formset.management_form }}
+        <div id="sortableContainer">
+            {% for category, rules in zipped_lists %}
+            <div>
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            {{ category.id.as_hidden }}
+                            <div class="col-5">
+                                {{ category.name.errors }}
+                                <label class="form-label" for="{{ category.name.id_for_label }}">{{ category.name.label }}</label>
+                                {{ category.name|add_class:"form-control" }}
+                            </div>
+                            <div class="col-5">
+                                {{ category.parent.errors }}
+                                <label class="form-label" for="{{ category.parent.id_for_label }}">{{ category.parent.label }}</label>
+                                {{ category.parent|add_class:"form-select" }}
+                            </div>
+                            <div class="col-2 d-flex justify-content-end">
+                                <button class="btn" type="button" onclick="onclickChevron(this)" data-bs-toggle="collapse" data-bs-target="#{{ category.prefix }}_rules">
+                                    <span class="bi bi-chevron-down" style="font-size: 2rem;"></span>
+                                </button>
+                            </div>
+                            {{ category.DELETE }}
+                            {{ category.priority }}
+                        </div>
+                    </div>
+                </div>
+                <div class="collapse" id="{{ category.prefix }}_rules">
+                    {{ rules.management_form }}
+                    <div class="rules-wrapper">
+                        {% for rule in rules %}
+                        <div class="row align-items-center mb-0">
+                            {{ rule.id.as_hidden }}
+                            <div class="col-3">
+                                {{ rule.match_type.errors }}
+                                {{ rule.match_type|add_class:"form-select" }}
+                            </div>     
+                            <div class="col-8">
+                                {{ rule.match_text.errors }}
+                                {{ rule.match_text|add_class:"form-control" }}
+                            </div>
+                            <button class="btn col-1" type="button" onclick="onDeleteRule(this)">
+                                <span class="bi bi-x" style="font-size: 2rem;"></span>
+                            </button>
+                            {{ rule.DELETE.as_hidden }} 
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <button class="btn btn-secondary btn-sm mb-3" type="button" onclick="newRule(this)">
+                        Add new
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <input type="submit" value="Save" class="btn btn-primary">
+    </form>
+</div>
+
+<script type="text/javascript" src="{% static 'category_rules.js' %}"></script>
 
 {% endblock %}

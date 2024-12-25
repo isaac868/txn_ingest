@@ -84,16 +84,13 @@ class UploadView(LoginRequiredMixin, View):
 
 
 def get_rule_formset(category_form, data=None):
-    RuleFormset = inlineformset_factory(Category, CategoryRule, extra=1, exclude=[])
-    if category_form.instance.pk:
-        return RuleFormset(data, instance=category_form.instance, prefix=f"category-{category_form.instance.pk}")
-    else:
-        return RuleFormset(data, prefix=f"new-category-{category_form.prefix}")
+    RuleFormset = inlineformset_factory(Category, CategoryRule, extra=1, exclude=[], can_delete=True)
+    return RuleFormset(data, instance=(category_form.instance if category_form.instance else None), prefix=f"{category_form.prefix}-rule_set")
 
 
 @login_required
 def category_rules(request):
-    CategoryFormset = inlineformset_factory(User, Category, form=CategoryForm, exclude=["user"], extra=1, can_delete=True)
+    CategoryFormset = inlineformset_factory(User, Category, form=CategoryForm, exclude=["user"], min_num=1, extra=0, can_delete=True)
 
     filtered_queryset = Category.objects.exclude(pk=Category.get_uncategorized(request.user).pk)
     category_formset = CategoryFormset(instance=request.user, queryset=filtered_queryset, form_kwargs={"user": request.user})

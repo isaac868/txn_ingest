@@ -40,9 +40,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'main_app',
-    'crispy_forms',
-    'crispy_bootstrap5'
+    'widget_tweaks',
+    'main_app'
 ]
 
 MIDDLEWARE = [
@@ -141,10 +140,6 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 MEDIA_ROOT = 'uploads'
-
-CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
-
-CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 STATIC_URL = '/static/'
 STATIC_ROOT = '/app/static'
