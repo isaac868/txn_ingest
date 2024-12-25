@@ -71,10 +71,10 @@ function newCategory(button) {
     var newCategory = lastCategory.cloneNode(true);
     newCategory.removeAttribute('style');
 
-    // Remove hidden id inputs
-    idInputs = newCategory.querySelectorAll('input[type="hidden"][name$="-id"]');
-    for (var i = 0; i < idInputs.length; i++) {
-        idInputs[i].remove();
+    // Remove hidden id inputs and error list
+    elementsToDelete = newCategory.querySelectorAll('.errorlist, input[type="hidden"][name$="-id"]');
+    for (var i = 0; i < elementsToDelete.length; i++) {
+        elementsToDelete[i].remove();
     }
 
     // Clear input values and update id and name attributes

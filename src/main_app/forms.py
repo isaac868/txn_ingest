@@ -154,6 +154,10 @@ class CategoryForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
+
+        if self.errors:
+            return cleaned_data
+    
         if self.cleaned_data["name"] == Category.get_uncategorized(self.user).name:
             raise ValidationError("Category cannot be named %(cat)s", params={"cat": Category.get_uncategorized(self.user).name})
         return cleaned_data

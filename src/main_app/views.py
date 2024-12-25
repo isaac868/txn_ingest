@@ -98,8 +98,8 @@ def category_rules(request):
 
     if request.method == "POST" and "save-changes" in request.POST:
         category_formset = CategoryFormset(request.POST, instance=request.user, queryset=filtered_queryset, form_kwargs={"user": request.user})
+        rule_formsets = [get_rule_formset(category_form, request.POST) for category_form in category_formset]
         if category_formset.is_valid():
-            rule_formsets = [get_rule_formset(category_form, request.POST) for category_form in category_formset]
 
             if all(formset.is_valid() for formset in rule_formsets):
                 category_formset.save()
