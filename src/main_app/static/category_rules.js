@@ -12,20 +12,19 @@ function onDeleteRule(button) {
         }
     }
     if (visibleRules === 1) {
-        rule.querySelector('input[type="text"]').value = '';
-        rule.querySelector('select').value = 'contains';
-    } else {
-        var deleteInput = rule.querySelector('input[type="hidden"][name$="-DELETE"]');
-        deleteInput.value = 'on';
-        rule.style.display = 'none';
+        var newRuleBtn = rulesWrapper.nextElementSibling;
+        newRule(newRuleBtn);
     }
+    var deleteInput = rule.querySelector('input[type="hidden"][name$="-DELETE"]');
+    deleteInput.value = 'on';
+    rule.style.display = 'none';
 }
 
 function newRule(button) {
     var rulesWrapper = button.previousElementSibling;
     var lastRule = rulesWrapper.lastElementChild;
     var newRule = lastRule.cloneNode(true);
-    newRule.style.display = 'flex';
+    newRule.removeAttribute('style');
 
     // Clear input values and update id and name attributes
     var lambda = function (element) {
