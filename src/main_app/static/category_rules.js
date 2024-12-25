@@ -1,4 +1,3 @@
-
 function onclickChevron(button) {
     button.classList.toggle('rotated');
 }
@@ -58,6 +57,13 @@ function newRule(button) {
     totalForms.value = parseInt(totalForms.value) + 1;
 
     rulesWrapper.appendChild(newRule);
+}
+
+function onDeleteCategory(button) {
+    var categoryDiv = button.parentElement.parentElement.parentElement.parentElement;
+    var deleteInput = button.nextElementSibling;
+    deleteInput.value = 'on';
+    categoryDiv.style.display = 'none';
 }
 
 Sortable.create(sortableContainer, {filter: 'button, select, input', preventOnFilter: false});

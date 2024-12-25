@@ -45,8 +45,8 @@
                             <button class="btn col-1" type="button" onclick="onDeleteCategory(this)">
                                 <span class="bi bi-x" style="font-size: 2rem;"></span>
                             </button>
-                            {{ category.DELETE }}
-                            {{ category.priority }}
+                            {{ category.DELETE.as_hidden }}
+                            {{ category.priority.as_hidden }}
                         </div>
                     </div>
                 </div>
