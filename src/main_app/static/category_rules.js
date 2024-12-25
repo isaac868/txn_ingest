@@ -20,7 +20,7 @@ function onDeleteRule(button) {
     rule.style.display = 'none';
 }
 
-function newRule(button) {
+function newRule(button, setIndexZero = false) {
     var rulesWrapper = button.previousElementSibling;
     var lastRule = rulesWrapper.lastElementChild;
     var newRule = lastRule.cloneNode(true);
@@ -30,20 +30,20 @@ function newRule(button) {
     var lambda = function (element) {
         for (var i = 0; i < element.children.length; i++) {
             var child = element.children[i];
-            if (child.tagName === 'INPUT') {
-                child.value = '';
-            }
-            if (child.tagName === 'SELECT') {
-                child.value = 'contains';
+            if (child.tagName === 'INPUT' || child.tagName === 'SELECT') {
+                if (child.tagName === 'INPUT') {
+                    child.value = '';
+                }
+                child.removeAttribute('value');
             }
             if (child.id !== '') {
                 child.id = child.id.replace(/\d+(?!.*\d)/, function (match) {
-                    return parseInt(match) + 1;
+                    return (setIndexZero ? 0 : parseInt(match) + 1);
                 });
             }
             if (child.hasAttribute('name')) {
                 child.setAttribute('name', child.getAttribute('name').replace(/\d+(?!.*\d)/, function (match) {
-                    return parseInt(match) + 1;
+                    return (setIndexZero ? 0 : parseInt(match) + 1);
                 }));
             }
             lambda(child);
@@ -52,7 +52,7 @@ function newRule(button) {
     lambda(newRule);
 
     // Update TOTAL_FORMS
-    var totalForms = document.querySelector(`#${rulesWrapper.parentElement.id} input[name$='-TOTAL_FORMS']`);
+    var totalForms = rulesWrapper.parentElement.querySelector('input[name$="-TOTAL_FORMS"]');
     totalForms.value = parseInt(totalForms.value) + 1;
 
     rulesWrapper.appendChild(newRule);
@@ -65,6 +65,77 @@ function onDeleteCategory(button) {
     categoryDiv.style.display = 'none';
 }
 
+function newCategory(button) {
+    var categoriesContainer = document.querySelector('#sortableContainer');
+    var lastCategory = categoriesContainer.lastElementChild;
+    var newCategory = lastCategory.cloneNode(true);
+    newCategory.removeAttribute('style');
+
+    // Remove hidden id inputs
+    idInputs = newCategory.querySelectorAll('input[type="hidden"][name$="-id"]');
+    for (var i = 0; i < idInputs.length; i++) {
+        idInputs[i].remove();
+    }
+
+    // Clear input values and update id and name attributes
+    var lambda = function (element) {
+        for (var i = 0; i < element.children.length; i++) {
+            var child = element.children[i];
+            if ((child.tagName === 'INPUT' || child.tagName === 'SELECT') && child.type !== 'hidden') {
+                if (child.tagName === 'INPUT') {
+                    child.value = '';
+                }
+                child.removeAttribute('value');
+            }
+            if (child.hasAttribute('data-bs-target')) {
+                child.setAttribute('data-bs-target', child.getAttribute('data-bs-target').replace(/\d+/, function (match) {
+                    return parseInt(match) + 1;
+                }));
+            }
+            if (child.hasAttribute('for')) {
+                child.setAttribute('for', child.getAttribute('for').replace(/\d+/, function (match) {
+                    return parseInt(match) + 1;
+                }));
+            }
+            if (child.id !== '') {
+                child.id = child.id.replace(/\d+/, function (match) {
+                    return parseInt(match) + 1;
+                });
+            }
+            if (child.hasAttribute('name')) {
+                child.setAttribute('name', child.getAttribute('name').replace(/\d+/, function (match) {
+                    return parseInt(match) + 1;
+                }));
+            }
+            lambda(child);
+        }
+    }
+    lambda(newCategory);
+
+    // Create new blank rule form and delete the rest
+    var rulesCollapsable = newCategory.querySelector('.collapse');
+    var newRuleBtn = rulesCollapsable.querySelector('[id$="_new_rule_btn"]');
+    newRule(newRuleBtn, true);
+    var rulesWrapper = rulesCollapsable.querySelector('.rules-wrapper');
+    var emptyRule = rulesWrapper.lastElementChild.cloneNode(true);
+    rulesWrapper.textContent = '';
+    rulesWrapper.appendChild(emptyRule);
+
+    // Update ruleset management form to reflect single unfilled rule form
+    var totalForms = rulesCollapsable.querySelector('input[name$="-TOTAL_FORMS"]');
+    totalForms.value = 1;
+    var initialForms = rulesCollapsable.querySelector('input[name$="-INITIAL_FORMS"]');
+    initialForms.value = 0;
+
+    // Update TOTAL_FORMS (first instance of TOTAL_FORMS input in document)
+    var totalForms = document.querySelector('input[name$="-TOTAL_FORMS"]');
+    totalForms.value = parseInt(totalForms.value) + 1;
+
+    categoriesContainer.appendChild(newCategory);
+    rePrioritizeCategories();
+    createSortable();
+}
+
 function rePrioritizeCategories() {
     var categories = document.querySelectorAll('.card');
     for (var i = 0; i < categories.length; i++) {
@@ -72,5 +143,9 @@ function rePrioritizeCategories() {
     }
 }
 
+function createSortable() {
+    Sortable.create(sortableContainer, { filter: 'button, select, input', preventOnFilter: false, onUpdate: rePrioritizeCategories });
+}
+
 rePrioritizeCategories();
-Sortable.create(sortableContainer, { filter: 'button, select, input', preventOnFilter: false, onUpdate: rePrioritizeCategories });
+createSortable();
