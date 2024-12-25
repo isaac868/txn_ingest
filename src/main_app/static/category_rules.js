@@ -65,4 +65,12 @@ function onDeleteCategory(button) {
     categoryDiv.style.display = 'none';
 }
 
-Sortable.create(sortableContainer, {filter: 'button, select, input', preventOnFilter: false});
+function rePrioritizeCategories() {
+    var categories = document.querySelectorAll('.card');
+    for (var i = 0; i < categories.length; i++) {
+        categories[i].querySelector('input[name$="-priority"]').value = i;
+    }
+}
+
+rePrioritizeCategories();
+Sortable.create(sortableContainer, { filter: 'button, select, input', preventOnFilter: false, onUpdate: rePrioritizeCategories });
