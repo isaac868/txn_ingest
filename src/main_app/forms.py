@@ -152,12 +152,9 @@ class CategoryForm(forms.ModelForm):
         else:
             self.fields["parent"].queryset = Category.objects.filter(Q(user=self.user) & ~Q(pk=Category.get_uncategorized(self.user).pk))
 
-    def clean(self):
-        cleaned_data = super().clean()
-
-        if self.errors:
-            return cleaned_data
+    def clean_name(self):
+        name = self.cleaned_data["name"]
     
-        if self.cleaned_data["name"] == Category.get_uncategorized(self.user).name:
+        if name == Category.get_uncategorized(self.user).name:
             raise ValidationError("Category cannot be named %(cat)s", params={"cat": Category.get_uncategorized(self.user).name})
-        return cleaned_data
+        return name

@@ -6,7 +6,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 <style>
     .category-container {
-        width: 50vw;
+        width: 60vw;
         margin: auto;
     }
     .rotated {
@@ -27,12 +27,18 @@
             <div>
                 <div class="card mb-3">
                     <div class="card-body">
-                        <div class="row align-items-center">
+                        <div class="row align-items-stretch">
                             {{ category.id.as_hidden }}
                             <div class="col-5">
-                                {{ category.name.errors }}
                                 <label class="form-label" for="{{ category.name.id_for_label }}">{{ category.name.label }}</label>
-                                {{ category.name|add_class:"form-control" }}
+                                {% with feedback_id_attr="aria-describedby:"|add:category.prefix|add:"_feedback" %}
+                                    {{ category.name|add_class:"form-control"|add_error_class:"is-invalid"|add_error_attr:feedback_id_attr|append_attr:"required" }}
+                                    {% if category.name.errors %}
+                                    <div class="invalid-feedback" id="{{ feedback_id_attr }}">
+                                        {{ category.name.errors|first }}
+                                    </div>                              
+                                    {% endif %}
+                                {% endwith %}
                             </div>
                             <div class="col-5">
                                 {{ category.parent.errors }}
@@ -54,15 +60,21 @@
                     {{ rules.management_form }}
                     <div class="rules-wrapper">
                         {% for rule in rules %}
-                        <div class="row align-items-center mb-0">
+                        <div class="row align-items-stretch mb-0">
                             {{ rule.id.as_hidden }}
                             <div class="col-3">
                                 {{ rule.match_type.errors }}
                                 {{ rule.match_type|add_class:"form-select" }}
                             </div>     
                             <div class="col-8">
-                                {{ rule.match_text.errors }}
-                                {{ rule.match_text|add_class:"form-control" }}
+                                {% with feedback_id_attr="aria-describedby:"|add:rule.prefix|add:"_feedback" %}
+                                    {{ rule.match_text|add_class:"form-control"|add_error_class:"is-invalid"|add_error_attr:feedback_id_attr }}
+                                    {% if rule.match_text.errors %}
+                                    <div class="invalid-feedback" id="{{ feedback_id_attr }}">
+                                        {{ rule.match_text.errors|first }}
+                                    </div>                              
+                                    {% endif %}
+                                {% endwith %}
                             </div>
                             <button class="btn col-1" type="button" onclick="onDeleteRule(this)">
                                 <span class="bi bi-x" style="font-size: 2rem;"></span>
