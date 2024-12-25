@@ -167,12 +167,13 @@ class TransactionView(LoginRequiredMixin, View):
         change_data = json.loads(request.body)
         try:
             changed_txns = Transaction.objects.filter(Q(user=request.user) & Q(pk__in=[item["pk"] for item in change_data["changes"]]))
+            categorization_dicts = get_user_categorization_dicts(request.user)
             for change in change_data["changes"]:
                 changed_txn = changed_txns.get(pk=change["pk"])
                 if change["override"]:
                     changed_txn.category = Category.objects.filter(user=request.user).get(pk=change["category"])
                 else:
-                    changed_txn.category = get_category(request.user, changed_txn.description)
+                    changed_txn.category = get_category(categorization_dicts, changed_txn.description)
                 changed_txn.category_override = change["override"]
                 changed_txn.save()
 
