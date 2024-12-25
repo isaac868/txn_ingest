@@ -96,7 +96,7 @@ def category_rules(request):
     category_formset = CategoryFormset(instance=request.user, queryset=filtered_queryset, form_kwargs={"user": request.user})
     rule_formsets = [get_rule_formset(category_form) for category_form in category_formset]
 
-    if request.method == "POST":
+    if request.method == "POST" and "save-changes" in request.POST:
         category_formset = CategoryFormset(request.POST, instance=request.user, queryset=filtered_queryset, form_kwargs={"user": request.user})
         if category_formset.is_valid():
             rule_formsets = [get_rule_formset(category_form, request.POST) for category_form in category_formset]
@@ -112,6 +112,7 @@ def category_rules(request):
                     txn.category = get_category(categorization_dicts, txn.description)
                 Transaction.objects.bulk_update(txns, ["category"])
                 return redirect(reverse(category_rules))
+    # if "cancel-changes" in request.POST: Nothing to do, just redirect
 
     context = {"category_formset": category_formset, "zipped_lists": zip(category_formset, rule_formsets)}
     return render(request, "category_rules.html", context)
