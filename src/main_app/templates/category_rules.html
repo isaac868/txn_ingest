@@ -39,11 +39,12 @@
                                 <label class="form-label" for="{{ category.parent.id_for_label }}">{{ category.parent.label }}</label>
                                 {{ category.parent|add_class:"form-select" }}
                             </div>
-                            <div class="col-2 d-flex justify-content-end">
-                                <button class="btn" type="button" onclick="onclickChevron(this)" data-bs-toggle="collapse" data-bs-target="#{{ category.prefix }}_rules">
-                                    <span class="bi bi-chevron-down" style="font-size: 2rem;"></span>
-                                </button>
-                            </div>
+                            <button class="btn col-1" type="button" onclick="onclickChevron(this)" data-bs-toggle="collapse" data-bs-target="#{{ category.prefix }}_rules">
+                                <span class="bi bi-chevron-down" style="font-size: 2rem;"></span>
+                            </button>
+                            <button class="btn col-1" type="button" onclick="onDeleteCategory(this)">
+                                <span class="bi bi-x" style="font-size: 2rem;"></span>
+                            </button>
                             {{ category.DELETE }}
                             {{ category.priority }}
                         </div>
@@ -78,6 +79,9 @@
             {% endfor %}
         </div>
         <input type="submit" name="save-changes" value="Save" class="btn btn-primary">
+        <button class="btn btn-secondary" type="button" onclick="newCategory()">
+            Add New Category
+        </button>
         <input type="submit" name="discard-changes" value="Cancel" class="btn btn-secondary">
     </form>
 </div>
