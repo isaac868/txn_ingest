@@ -20,7 +20,7 @@ function onDeleteRule(button) {
     rule.style.display = 'none';
 }
 
-function newRule(button, setIndexZero = false) {
+function newRule(button, forNewCategory = false) {
     var rulesWrapper = button.previousElementSibling;
     var lastRule = rulesWrapper.lastElementChild;
     var newRule = lastRule.cloneNode(true);
@@ -38,12 +38,12 @@ function newRule(button, setIndexZero = false) {
             }
             if (child.id !== '') {
                 child.id = child.id.replace(/\d+(?!.*\d)/, function (match) {
-                    return (setIndexZero ? 0 : parseInt(match) + 1);
+                    return (forNewCategory ? 0 : parseInt(match) + 1);
                 });
             }
             if (child.hasAttribute('name')) {
                 child.setAttribute('name', child.getAttribute('name').replace(/\d+(?!.*\d)/, function (match) {
-                    return (setIndexZero ? 0 : parseInt(match) + 1);
+                    return (forNewCategory ? 0 : parseInt(match) + 1);
                 }));
             }
             lambda(child);
@@ -56,6 +56,9 @@ function newRule(button, setIndexZero = false) {
     totalForms.value = parseInt(totalForms.value) + 1;
 
     rulesWrapper.appendChild(newRule);
+    if (!forNewCategory) {
+        newRule.querySelector('input:not([type="hidden"])').focus();
+    }
 }
 
 function onDeleteCategory(button) {
@@ -65,7 +68,7 @@ function onDeleteCategory(button) {
     categoryDiv.style.display = 'none';
 }
 
-function newCategory(button) {
+function newCategory() {
     var categoriesContainer = document.querySelector('#sortableContainer');
     var lastCategory = categoriesContainer.lastElementChild;
     var newCategory = lastCategory.cloneNode(true);
@@ -132,6 +135,7 @@ function newCategory(button) {
     totalForms.value = parseInt(totalForms.value) + 1;
 
     categoriesContainer.appendChild(newCategory);
+    newCategory.querySelector('input:not([type="hidden"])').focus();
     rePrioritizeCategories();
     createSortable();
 }
