@@ -76,6 +76,7 @@ function onDeleteCategory(button) {
     var categoryDiv = button.parentElement.parentElement.parentElement.parentElement;
     var deleteInput = button.nextElementSibling;
     deleteInput.value = 'on';
+    categoryDiv.querySelector('input:not([type="hidden"])').removeAttribute('required');
     categoryDiv.style.display = 'none';
 }
 
