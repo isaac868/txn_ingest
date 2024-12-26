@@ -23,9 +23,13 @@
     
         {{ category_formset.management_form }}
         <div id="sortableContainer">
-            {% for category, rules in zipped_lists %}
+            {% for category, rules, valid_card in zipped_lists %}
             <div>
+                {% if valid_card %}
                 <div class="card mb-4">
+                {% else %}
+                <div class="card mb-4 border-danger">
+                {% endif %}
                     <div class="card-body">
                         <div class="row align-items-stretch">
                             {{ category.id.as_hidden }}
