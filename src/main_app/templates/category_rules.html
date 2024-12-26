@@ -16,6 +16,10 @@
 {% endblock %}    
 
 {% block content %}
+<h2 class="text-center fw-bold">
+    Categorization Rules
+</h2>
+<p class="text-muted text-center">Define how transactions should be matched to categories.</p>
 
 <div class="category-container">
     <form method="POST">
@@ -30,7 +34,7 @@
                 {% else %}
                 <div class="card mb-4 border-danger">
                 {% endif %}
-                    <div class="card-body">
+                    <div class="card-header">
                         <div class="row align-items-stretch">
                             {{ category.id.as_hidden }}
                             <div class="col-5">
@@ -47,7 +51,7 @@
                             <div class="col-5">
                                 {{ category.parent.errors }}
                                 <label class="form-label" for="{{ category.parent.id_for_label }}">{{ category.parent.label }}</label>
-                                {{ category.parent|add_class:"form-select" }}
+                                {{ category.parent|add_class:"form-select mb-2" }}
                             </div>
                             <button class="btn col-1" type="button" onclick="onclickChevron(this)" data-bs-toggle="collapse" data-bs-target="#{{ category.prefix }}_rules">
                                 <span class="bi bi-chevron-down" style="font-size: 2rem;"></span>
@@ -59,37 +63,40 @@
                             {{ category.priority.as_hidden }}
                         </div>
                     </div>
-                </div>
-                <div class="collapse" id="{{ category.prefix }}_rules">
-                    {{ rules.management_form }}
-                    <div class="rules-wrapper">
-                        {% for rule in rules %}
-                        <div class="row align-items-stretch mb-2">
-                            {{ rule.id.as_hidden }}
-                            <div class="col-3">
-                                {{ rule.match_type.errors }}
-                                {{ rule.match_type|add_class:"form-select" }}
-                            </div>     
-                            <div class="col-8">
-                                {% with feedback_id_attr="aria-describedby:"|add:rule.prefix|add:"_feedback" %}
-                                    {{ rule.match_text|add_class:"form-control"|add_error_class:"is-invalid"|add_error_attr:feedback_id_attr }}
-                                    {% if rule.match_text.errors %}
-                                    <div class="invalid-feedback" id="{{ feedback_id_attr }}">
-                                        {{ rule.match_text.errors|first }}
-                                    </div>                              
-                                    {% endif %}
-                                {% endwith %}
+                    <div class="collapse" id="{{ category.prefix }}_rules">
+                        <div class="card-body">
+                            <h6 class="mb-3">Assign category when the description:</h6>
+                            {{ rules.management_form }}
+                            <div class="rules-wrapper">
+                                {% for rule in rules %}
+                                <div class="row align-items-stretch mb-2">
+                                    {{ rule.id.as_hidden }}
+                                    <div class="col-3">
+                                        {{ rule.match_type.errors }}
+                                        {{ rule.match_type|add_class:"form-select" }}
+                                    </div>     
+                                    <div class="col-8">
+                                        {% with feedback_id_attr="aria-describedby:"|add:rule.prefix|add:"_feedback" %}
+                                            {{ rule.match_text|add_class:"form-control"|add_error_class:"is-invalid"|add_error_attr:feedback_id_attr }}
+                                            {% if rule.match_text.errors %}
+                                            <div class="invalid-feedback" id="{{ feedback_id_attr }}">
+                                                {{ rule.match_text.errors|first }}
+                                            </div>                              
+                                            {% endif %}
+                                        {% endwith %}
+                                    </div>
+                                    <button class="btn col-1 pt-0 align-self-start" type="button" onclick="onDeleteRule(this)">
+                                        <span class="bi bi-x" style="font-size: 1.5rem;"></span>
+                                    </button>
+                                    {{ rule.DELETE.as_hidden }} 
+                                </div>
+                                {% endfor %}
                             </div>
-                            <button class="btn col-1 pt-0 align-self-start" type="button" onclick="onDeleteRule(this)">
-                                <span class="bi bi-x" style="font-size: 1.5rem;"></span>
+                            <button class="btn btn-secondary btn-sm" id="{{ category.prefix }}_new_rule_btn" type="button" onclick="newRule(this)">
+                                Add rule
                             </button>
-                            {{ rule.DELETE.as_hidden }} 
                         </div>
-                        {% endfor %}
                     </div>
-                    <button class="btn btn-secondary btn-sm mb-4" id="{{ category.prefix }}_new_rule_btn" type="button" onclick="newRule(this)">
-                        Add rule
-                    </button>
                 </div>
             </div>
             {% endfor %}
