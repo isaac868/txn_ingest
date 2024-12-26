@@ -26,15 +26,26 @@ function newRule(button, forNewCategory = false) {
     var newRule = lastRule.cloneNode(true);
     newRule.removeAttribute('style');
 
+    // Remove hidden id inputs, feedback text, and error styling
+    elementsToDelete = newRule.querySelectorAll('.invalid-feedback, input[type="hidden"][name$="-id"]');
+    for (var i = 0; i < elementsToDelete.length; i++) {
+        elementsToDelete[i].remove();
+    }
+    newRule.querySelector('.form-control').classList.remove('is-invalid');
+
     // Clear input values and update id and name attributes
     var lambda = function (element) {
         for (var i = 0; i < element.children.length; i++) {
             var child = element.children[i];
-            if (child.tagName === 'INPUT' || child.tagName === 'SELECT') {
-                if (child.tagName === 'INPUT') {
-                    child.value = '';
+            if (child.tagName === 'INPUT') {
+                child.value = '';
+            }
+            if (child.tagName === 'SELECT') {
+                options = child.querySelectorAll('option');
+                for (var j = 0; j < options.length; j++) {
+                    options[j].removeAttribute('selected');
                 }
-                child.removeAttribute('value');
+                child.querySelector('option[value="contains"]').setAttribute('selected', '');
             }
             if (child.id !== '') {
                 child.id = child.id.replace(/\d+(?!.*\d)/, function (match) {
@@ -74,21 +85,20 @@ function newCategory() {
     var newCategory = lastCategory.cloneNode(true);
     newCategory.removeAttribute('style');
 
-    // Remove hidden id inputs and error list
-    elementsToDelete = newCategory.querySelectorAll('.errorlist, input[type="hidden"][name$="-id"]');
+    // Remove hidden id inputs, feedback text, and error styling
+    elementsToDelete = newCategory.querySelectorAll('.invalid-feedback, input[type="hidden"][name$="-id"]');
     for (var i = 0; i < elementsToDelete.length; i++) {
         elementsToDelete[i].remove();
     }
+    newCategory.querySelector('.form-control').classList.remove('is-invalid');
+    newCategory.querySelector('.card').classList.remove('border-danger');
 
     // Clear input values and update id and name attributes
     var lambda = function (element) {
         for (var i = 0; i < element.children.length; i++) {
             var child = element.children[i];
             if ((child.tagName === 'INPUT' || child.tagName === 'SELECT') && child.type !== 'hidden') {
-                if (child.tagName === 'INPUT') {
-                    child.value = '';
-                }
-                child.removeAttribute('value');
+                child.value = '';
             }
             if (child.hasAttribute('data-bs-target')) {
                 child.setAttribute('data-bs-target', child.getAttribute('data-bs-target').replace(/\d+/, function (match) {
