@@ -121,10 +121,7 @@ def category_rules(request):
 
 def get_account_formset(bank_form, data=None):
     AccountFormset = inlineformset_factory(Bank, Account, extra=1, exclude=[])
-    if bank_form.instance.pk:
-        return AccountFormset(data, instance=bank_form.instance, prefix=f"bank-{bank_form.instance.pk}")
-    else:
-        return AccountFormset(data, prefix=f"new-bank-{bank_form.prefix}")
+    return AccountFormset(data, instance=(bank_form.instance if bank_form.instance else None), prefix=f"{bank_form.prefix}-account_set")
 
 
 @login_required
@@ -133,21 +130,22 @@ def accounts(request):
 
     bank_formset = BankFormset(instance=request.user)
     account_formsets = [get_account_formset(bank_form) for bank_form in bank_formset]
-
-    if request.method == "POST":
+    bankIsValid = [True for _ in bank_formset]
+    
+    if request.method == "POST" and "save-changes" in request.POST:
         bank_formset = BankFormset(request.POST, instance=request.user)
+        account_formsets = [get_account_formset(bank_form, request.POST) for bank_form in bank_formset]
         if bank_formset.is_valid():
-            account_formsets = [get_account_formset(bank_form, request.POST) for bank_form in bank_formset]
-
             if all(formset.is_valid() for formset in account_formsets):
                 bank_formset.save()
                 for bank_form, account_formset in zip(bank_formset, account_formsets):
                     account_formset.instance = bank_form.instance
                     account_formset.save()
                 return redirect(reverse(accounts))
+        bankIsValid = [(bank_form.is_valid() and account_formset.is_valid()) for bank_form, account_formset in zip(bank_formset, account_formsets)]
 
-    context = {"category_formset": bank_formset, "zipped_lists": zip(bank_formset, account_formsets)}
-    return render(request, "category_rules.html", context)
+    context = {"bank_formset": bank_formset, "zipped_lists": zip(bank_formset, account_formsets, bankIsValid)}
+    return render(request, "accounts.html", context)
 
 
 class TransactionView(LoginRequiredMixin, View):

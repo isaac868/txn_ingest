@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+{% load static %}
+
+{% block header %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+<style>
+    .bank-container {
+        width: 60vw;
+        margin: auto;
+    }
+</style>
+{% endblock %}    
+
+{% block content %}
+<h2 class="text-center fw-bold">
+    Bank Accounts
+</h2>
+<p class="text-muted text-center">Create bank and bank account definitions.</p>
+
+<div class="bank-container">
+    <form method="POST">
+        {% csrf_token %}
+    
+        {{ bank_formset.management_form }}
+        <div id="sortableContainer">
+            {% for bank, accounts, valid_card in zipped_lists %}
+            <div>
+                {% if valid_card %}
+                <div class="card mb-4">
+                {% else %}
+                <div class="card mb-4 border-danger">
+                {% endif %}
+                    <div class="card-header">
+                        {{ bank.id.as_hidden }}
+                        <div class="row">
+                            <label for="{{ bank.name.id_for_label }}" class="col-auto col-form-label">{{ bank.name.label }}</label>
+                            <div class="col">
+                                {% with feedback_id_attr="aria-describedby:"|add:bank.prefix|add:"_feedback" %}
+                                    {{ bank.name|add_class:"form-control"|add_error_class:"is-invalid"|add_error_attr:feedback_id_attr }}
+                                    {% if bank.name.errors %}
+                                    <div class="invalid-feedback" id="{{ feedback_id_attr }}">
+                                        {{ bank.name.errors|first }}
+                                    </div>                              
+                                    {% endif %}
+                                {% endwith %}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <label class="col-auto col-form-label" for="{{ bank.DELETE.id_for_label }}">Delete</label>
+                            <div class="col align-self-center">
+                                <div class="form-check">
+                                    {{ bank.DELETE|add_class:"form-check-input" }}                       
+                                </div>
+                            </div>
+                        </div>                        
+                    </div>
+                    <div class="card-body">
+                        {{ accounts.management_form }}
+                        <table class="table table-borderless">
+                            <thead>
+                                <tr>
+                                    <th>{{ accounts.empty_form.name.label }}</th>
+                                    <th>{{ accounts.empty_form.account_type.label }}</th>
+                                    <th>{{ accounts.empty_form.currency.label }}</th>
+                                    <th class="text-center">{{ accounts.empty_form.DELETE.label }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for account in accounts %}
+                                <tr>
+                                    {{ account.id.as_hidden }}
+                                    <td>
+                                        {% with feedback_id_attr="aria-describedby:"|add:account.prefix|add:"_feedback" %}
+                                            {{ account.name|add_class:"form-control"|add_error_class:"is-invalid"|add_error_attr:feedback_id_attr }}
+                                            {% if account.name.errors %}
+                                            <div class="invalid-feedback" id="{{ feedback_id_attr }}">
+                                                {{ account.name.errors|first }}
+                                            </div>                              
+                                            {% endif %}
+                                        {% endwith %}
+                                    </td>     
+                                    <td>
+                                        {{ account.account_type|add_class:"form-select" }}
+                                    </td>
+                                    <td>
+                                        {{ account.currency|add_class:"form-select" }}
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        {{ account.DELETE|add_class:"form-check-input" }}                              
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <input type="submit" name="save-changes" value="Save" class="btn btn-primary">
+        <input type="submit" name="discard-changes" value="Cancel" class="btn btn-secondary">
+    </form>
+</div>
+
+{% endblock %}
