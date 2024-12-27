@@ -143,3 +143,5 @@ MEDIA_ROOT = 'uploads'
 
 STATIC_URL = '/static/'
 STATIC_ROOT = '/app/static'
+
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
