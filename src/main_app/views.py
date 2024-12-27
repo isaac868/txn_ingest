@@ -84,23 +84,19 @@ class UploadView(LoginRequiredMixin, View):
         return redirect(reverse("upload"))
 
 
-def get_rule_formset(category_form, data=None):
-    RuleFormset = inlineformset_factory(Category, CategoryRule, extra=1, exclude=[], can_delete=True)
-    return RuleFormset(data, prefix=f"{category_form.prefix}-rule_set")
-
-
 @login_required
 def category_rules(request):
     CategoryFormset = inlineformset_factory(User, Category, form=CategoryForm, exclude=["user"], min_num=1, extra=0, can_delete=True)
+    RuleFormset = inlineformset_factory(Category, CategoryRule, extra=1, exclude=[], can_delete=True)
 
     filtered_queryset = Category.objects.exclude(pk=Category.get_uncategorized(request.user).pk)
     category_formset = CategoryFormset(instance=request.user, queryset=filtered_queryset, form_kwargs={"user": request.user})
-    rule_formsets = [get_rule_formset(category_form) for category_form in category_formset]
+    rule_formsets = [RuleFormset(instance=category_form.instance, prefix=f"{category_form.prefix}-rule_set") for category_form in category_formset]
     categoryIsValid = [True for _ in category_formset]
 
     if request.method == "POST" and "save-changes" in request.POST:
         category_formset = CategoryFormset(request.POST, instance=request.user, queryset=filtered_queryset, form_kwargs={"user": request.user})
-        rule_formsets = [get_rule_formset(category_form, request.POST) for category_form in category_formset]
+        rule_formsets = [RuleFormset(request.POST, prefix=f"{category_form.prefix}-rule_set") for category_form in category_formset]
         if category_formset.is_valid():
             if all(formset.is_valid() for formset in rule_formsets):
                 category_formset.save()
@@ -120,28 +116,24 @@ def category_rules(request):
     return render(request, "category_rules.html", context)
 
 
-def get_account_formset(bank_form, data=None):
-    AccountFormset = inlineformset_factory(Bank, Account, form=AccountForm, extra=1, exclude=[])
-    return AccountFormset(data, prefix=f"{bank_form.prefix}-account_set")
-
-
 @login_required
 def accounts(request):
     BankFormset = inlineformset_factory(User, Bank, form=BankForm, exclude=["user"], extra=1, can_delete=True)
+    AccountFormset = inlineformset_factory(Bank, Account, form=AccountForm, extra=1, exclude=[])
 
     bank_formset = BankFormset(instance=request.user, form_kwargs={"user": request.user})
-    account_formsets = [get_account_formset(bank_form) for bank_form in bank_formset]
+    account_formsets = [AccountFormset(instance=bank_form.instance, prefix=f"{bank_form.prefix}-account_set") for bank_form in bank_formset]
     bankIsValid = [True for _ in bank_formset]
     
     if request.method == "POST" and "save-changes" in request.POST:
         bank_formset = BankFormset(request.POST, instance=request.user, form_kwargs={"user": request.user})
-        account_formsets = [get_account_formset(bank_form, request.POST) for bank_form in bank_formset]
+        account_formsets = [AccountFormset(request.POST, prefix=f"{bank_form.prefix}-account_set") for bank_form in bank_formset]
         if bank_formset.is_valid():
             if all(formset.is_valid() for formset in account_formsets):
                 bank_formset.save()
                 successfully_saved_accounts = True
                 for bank_form, account_formset in zip(bank_formset, account_formsets):
-                    if bank_form.instance.pk == None:
+                    if bank_form.instance.pk == None and account_formset.cleaned_data != [{}]:
                         successfully_saved_accounts = False
                         bank_form.add_error("name", ValidationError("Cannot save an account without a named bank", code="input_error"))
                         break
