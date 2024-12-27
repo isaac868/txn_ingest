@@ -7,7 +7,7 @@ from django.conf import settings
 from django.db.models import Q
 from django.core.files.storage import default_storage
 from django.core.exceptions import ValidationError
-from .models import ParseRule, Category, Account
+from .models import ParseRule, Category, Account, Bank
 from .common import get_category, get_user_categorization_dicts
 
 
@@ -139,6 +139,7 @@ class FileSelectForm(forms.Form):
 
 class CategoryForm(forms.ModelForm):
     class Meta:
+        model = Category
         exclude = ["user"]
 
     def __init__(self, *args, **kwargs):
@@ -157,4 +158,35 @@ class CategoryForm(forms.ModelForm):
     
         if name == Category.get_uncategorized(self.user).name:
             raise ValidationError("Category cannot be named %(cat)s", params={"cat": Category.get_uncategorized(self.user).name})
+        if name in [cat.name for cat in Category.objects.filter(Q(user=self.user) & ~Q(pk=self.instance.pk))]:
+            raise ValidationError("This category name is already in use", code="input_error")
         return name
+    
+
+class BankForm(forms.ModelForm):
+    class Meta:
+        model = Bank
+        exclude = ["user"]
+        labels = { "name": "Bank Name" }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop("user", None)
+        super().__init__(*args, **kwargs)
+
+    def clean_name(self):
+        name = self.cleaned_data["name"]
+    
+        if name in [bank.name for bank in Bank.objects.filter(Q(user=self.user) & ~Q(pk=self.instance.pk))]:
+            raise ValidationError("This bank name is already in use", code="input_error")
+        return name
+
+
+class AccountForm(forms.ModelForm):
+    class Meta:
+        model = Account
+        exclude = ["bank"]
+        labels = {
+            "name": "Account Name",
+            "account_type": "Account Type",
+            "currency": "Currency",
+        }

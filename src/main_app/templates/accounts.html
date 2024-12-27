@@ -34,7 +34,7 @@
                     <div class="card-header">
                         {{ bank.id.as_hidden }}
                         <div class="row">
-                            <label for="{{ bank.name.id_for_label }}" class="col-auto col-form-label">{{ bank.name.label }}</label>
+                            <label for="{{ bank.name.id_for_label }}" class="col-2 col-form-label">{{ bank.name.label }}</label>
                             <div class="col">
                                 {% with feedback_id_attr="aria-describedby:"|add:bank.prefix|add:"_feedback" %}
                                     {{ bank.name|add_class:"form-control"|add_error_class:"is-invalid"|add_error_attr:feedback_id_attr }}
@@ -47,7 +47,7 @@
                             </div>
                         </div>
                         <div class="row">
-                            <label class="col-auto col-form-label" for="{{ bank.DELETE.id_for_label }}">Delete</label>
+                            <label class="col-2 col-form-label" for="{{ bank.DELETE.id_for_label }}">Delete</label>
                             <div class="col align-self-center">
                                 <div class="form-check">
                                     {{ bank.DELETE|add_class:"form-check-input" }}                       
