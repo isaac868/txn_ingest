@@ -12,6 +12,7 @@ from django.contrib.auth import login, forms as auth_forms
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.files.storage import default_storage
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.contrib.auth.decorators import login_required
 from .models import ParseRule, CategoryRule, Category, Transaction, Account, Bank
 from .forms import ParseRuleForm, FileSelectForm, CategoryForm, AccountForm, BankForm
@@ -85,7 +86,7 @@ class UploadView(LoginRequiredMixin, View):
 
 def get_rule_formset(category_form, data=None):
     RuleFormset = inlineformset_factory(Category, CategoryRule, extra=1, exclude=[], can_delete=True)
-    return RuleFormset(data, instance=(category_form.instance if category_form.instance else None), prefix=f"{category_form.prefix}-rule_set")
+    return RuleFormset(data, prefix=f"{category_form.prefix}-rule_set")
 
 
 @login_required
@@ -121,7 +122,7 @@ def category_rules(request):
 
 def get_account_formset(bank_form, data=None):
     AccountFormset = inlineformset_factory(Bank, Account, form=AccountForm, extra=1, exclude=[])
-    return AccountFormset(data, instance=(bank_form.instance if bank_form.instance else None), prefix=f"{bank_form.prefix}-account_set")
+    return AccountFormset(data, prefix=f"{bank_form.prefix}-account_set")
 
 
 @login_required
@@ -138,11 +139,17 @@ def accounts(request):
         if bank_formset.is_valid():
             if all(formset.is_valid() for formset in account_formsets):
                 bank_formset.save()
+                successfully_saved_accounts = True
                 for bank_form, account_formset in zip(bank_formset, account_formsets):
+                    if bank_form.instance.pk == None:
+                        successfully_saved_accounts = False
+                        bank_form.add_error("name", ValidationError("Cannot save an account without a named bank", code="input_error"))
+                        break
                     account_formset.instance = bank_form.instance
                     account_formset.save()
-                return redirect(reverse(accounts))
-        bankIsValid = [(bank_form.is_valid() and account_formset.is_valid()) for bank_form, account_formset in zip(bank_formset, account_formsets)]
+                if successfully_saved_accounts:
+                    return redirect(reverse(accounts))
+        bankIsValid = [(bank_form.is_valid() and account_formset.is_valid() and (bank_form.instance.pk != None) ) for bank_form, account_formset in zip(bank_formset, account_formsets)]
 
     context = {"bank_formset": bank_formset, "zipped_lists": zip(bank_formset, account_formsets, bankIsValid)}
     return render(request, "accounts.html", context)
