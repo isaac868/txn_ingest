@@ -96,7 +96,7 @@ def category_rules(request):
 
     if request.method == "POST" and "save-changes" in request.POST:
         category_formset = CategoryFormset(request.POST, instance=request.user, queryset=filtered_queryset, form_kwargs={"user": request.user})
-        rule_formsets = [RuleFormset(request.POST, prefix=f"{category_form.prefix}-rule_set") for category_form in category_formset]
+        rule_formsets = [RuleFormset(request.POST, instance=category_form.instance, prefix=f"{category_form.prefix}-rule_set") for category_form in category_formset]
         if category_formset.is_valid():
             if all(formset.is_valid() for formset in rule_formsets):
                 category_formset.save()
@@ -115,9 +115,6 @@ def category_rules(request):
     context = {"category_formset": category_formset, "zipped_lists": zip(category_formset, rule_formsets, categoryIsValid)}
     return render(request, "category_rules.html", context)
 
-def get_account_formset(bank_form, data=None):
-    AccountFormset = inlineformset_factory(Bank, Account, form=AccountForm, extra=1, exclude=[])
-    return AccountFormset(data, instance=(bank_form.instance if bank_form.instance else None), prefix=f"{bank_form.prefix}-account_set")
 
 @login_required
 def accounts(request):
