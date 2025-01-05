@@ -101,7 +101,7 @@ def category_rules(request):
             RuleFormset(request.POST, instance=category_form.instance, prefix=f"{category_form.prefix}-rule_set") for category_form in category_formset
         ]
         upload_form = CategoryJsonFileForm(request.POST, request.FILES)
-        if category_formset.is_valid() and upload_form.is_valid():
+        if category_formset.is_valid() and upload_form.is_valid() and all(formset.is_valid() for formset in rule_formsets):
             # Load JSON file if provided
             if upload_form.cleaned_data["json_file"] and hasattr(upload_form, "json_data"):
                 for json_entry in upload_form.json_data:
@@ -111,18 +111,20 @@ def category_rules(request):
                     for rule in json_entry["rules"]:
                         CategoryRule.objects.create(category=new_category[0], match_type=rule["match_type"], match_text=rule["match_text"])
 
-            # Save cateogries and rules then update transactions
-            if all(formset.is_valid() for formset in rule_formsets):
-                category_formset.save()
-                for category_form, rule_formset in zip(category_formset, rule_formsets):
-                    rule_formset.instance = category_form.instance
-                    rule_formset.save()
-                txns = Transaction.objects.filter(Q(user=request.user) & Q(category_override=False))
-                categorization_dicts = get_user_categorization_dicts(request.user)
-                for txn in txns:
-                    txn.category = get_category(categorization_dicts, txn.description)
-                Transaction.objects.bulk_update(txns, ["category"])
-                return redirect(reverse(category_rules))
+            # Save cateogries and rules
+            category_formset.save()
+            for category_form, rule_formset in zip(category_formset, rule_formsets):
+                rule_formset.instance = category_form.instance
+                rule_formset.save()
+
+            # Update transactions with new categories
+            txns = Transaction.objects.filter(Q(user=request.user) & Q(category_override=False))
+            categorization_dicts = get_user_categorization_dicts(request.user)
+            for txn in txns:
+                txn.category = get_category(categorization_dicts, txn.description)
+            Transaction.objects.bulk_update(txns, ["category"])
+
+            return redirect(reverse(category_rules))
         categoryIsValid = [(category_form.is_valid() and rule_formset.is_valid()) for category_form, rule_formset in zip(category_formset, rule_formsets)]
     # if "cancel-changes" in request.POST: Nothing to do, just redirect
 
