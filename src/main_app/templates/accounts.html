@@ -19,7 +19,7 @@
 <p class="text-muted text-center">Create bank and bank account definitions.</p>
 
 <div class="bank-container">
-    <form method="POST">
+    <form method="POST" class="mb-3">
         {% csrf_token %}
     
         {{ bank_formset.management_form }}
