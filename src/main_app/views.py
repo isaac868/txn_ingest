@@ -104,12 +104,15 @@ def category_rules(request):
         if category_formset.is_valid() and upload_form.is_valid() and all(formset.is_valid() for formset in rule_formsets):
             # Load JSON file if provided
             if upload_form.cleaned_data["json_file"] and hasattr(upload_form, "json_data"):
+                cats = []
+                rules = []
                 for json_entry in upload_form.json_data:
-                    new_category = Category.objects.get_or_create(
-                        user=request.user, name=json_entry["name"], defaults={"priority": json_entry["priority"], "parent": None}
-                    )
+                    new_category = Category(user=request.user, name=json_entry["name"], priority=json_entry["priority"], parent=None)
+                    cats.append(new_category)
                     for rule in json_entry["rules"]:
-                        CategoryRule.objects.create(category=new_category[0], match_type=rule["match_type"], match_text=rule["match_text"])
+                        rules.append(CategoryRule(category=new_category, match_type=rule["match_type"], match_text=rule["match_text"]))
+                Category.objects.bulk_create(cats, update_conflicts=True, update_fields=["priority", "parent"], unique_fields=["name", "user"])
+                CategoryRule.objects.bulk_create(rules)
 
             # Save cateogries and rules
             category_formset.save()
