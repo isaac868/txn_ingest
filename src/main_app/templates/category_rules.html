@@ -22,7 +22,7 @@
 <p class="text-muted text-center">Define how transactions should be matched to categories. Drag to change the order in which categories are evaluated for a match.</p>
 
 <div class="category-container">
-    <form method="POST">
+    <form enctype="multipart/form-data" method="POST">
         {% csrf_token %}
     
         {{ category_formset.management_form }}
@@ -101,6 +101,27 @@
             </div>
             {% endfor %}
         </div>
+        <div class="row align-items-end mb-3">
+            <div class="col-auto">
+                <label class="form-label" for="{{ upload_form.json_file.id_for_label }}">{{ upload_form.json_file.label }}</label>
+                {{ upload_form.json_file|add_class:"form-control"|add_error_class:"is-invalid"|add_error_attr:"aria-describedby:invalid_json_feedback" }}
+                {% if upload_form.json_file.errors %}
+                <div class="invalid-feedback" id="invalid_json_feedback">
+                    {{ upload_form.json_file.errors|first }}
+                </div>                              
+                {% endif %}
+            </div>
+            {% if upload_form.json_file.errors %}
+            <div class="col-auto align-self-center">
+            {% else %}
+            <div class="col-auto">
+            {% endif %}
+                <a href="{% url "category_rules" %}{% querystring getJson="True" %}" class="btn btn-success" data-bs-toggle="tooltip" data-bs-title="Download saved rules as JSON">
+                    <i class="bi bi-download"></i>
+                </a>
+            </div>
+        </div>
+        <hr>
         <input type="submit" name="save-changes" value="Save" class="btn btn-primary">
         <button class="btn btn-secondary" type="button" onclick="newCategory()">
             Add New Category

@@ -1,7 +1,9 @@
 import csv
 import io
 import os
+import json
 from datetime import datetime
+from jsonschema import validate
 from django import forms
 from django.conf import settings
 from django.db.models import Q
@@ -162,6 +164,22 @@ class CategoryForm(forms.ModelForm):
             raise ValidationError("This category name is already in use", code="input_error")
         return name
     
+class CategoryJsonFileForm(forms.Form):
+    json_file = forms.FileField(required=False, label="Optional: JSON Rule File")
+
+    def clean_json_file(self):
+        json_file = self.cleaned_data["json_file"]
+        if json_file:
+            try:
+                data = json_file.read().decode("utf-8")
+                schema_path = os.path.join(settings.BASE_DIR, "main_app", "category_rule_schema.json")
+                with open(schema_path, "r") as schema_file:
+                    schema = json.load(schema_file)
+                    self.json_data = json.loads(data)
+                    validate(self.json_data, schema)
+            except Exception as e:
+                raise ValidationError("Invalid JSON file: %(schema_error)s",  params={"schema_error": e.message}, code="input_error")
+        return json_file
 
 class BankForm(forms.ModelForm):
     class Meta:

@@ -15,7 +15,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.contrib.auth.decorators import login_required
 from .models import ParseRule, CategoryRule, Category, Transaction, Account, Bank
-from .forms import ParseRuleForm, FileSelectForm, CategoryForm, AccountForm, BankForm
+from .forms import ParseRuleForm, FileSelectForm, CategoryForm, AccountForm, BankForm, CategoryJsonFileForm
 from .common import get_category, get_user_categorization_dicts
 
 
@@ -91,13 +91,23 @@ def category_rules(request):
 
     filtered_queryset = Category.objects.exclude(pk=Category.get_uncategorized(request.user).pk)
     category_formset = CategoryFormset(instance=request.user, queryset=filtered_queryset, form_kwargs={"user": request.user})
+    upload_form = CategoryJsonFileForm()
     rule_formsets = [RuleFormset(instance=category_form.instance, prefix=f"{category_form.prefix}-rule_set") for category_form in category_formset]
     categoryIsValid = [True for _ in category_formset]
 
     if request.method == "POST" and "save-changes" in request.POST:
         category_formset = CategoryFormset(request.POST, instance=request.user, queryset=filtered_queryset, form_kwargs={"user": request.user})
         rule_formsets = [RuleFormset(request.POST, instance=category_form.instance, prefix=f"{category_form.prefix}-rule_set") for category_form in category_formset]
-        if category_formset.is_valid():
+        upload_form = CategoryJsonFileForm(request.POST, request.FILES)
+        if category_formset.is_valid() and upload_form.is_valid():
+            # Load JSON file if provided
+            if upload_form.cleaned_data["json_file"] and hasattr(upload_form, "json_data"):
+                for json_entry in upload_form.json_data:
+                    new_category = Category.objects.get_or_create(user=request.user, name=json_entry["name"], defaults={"priority": json_entry["priority"], "parent": None})
+                    for rule in json_entry["rules"]:
+                        CategoryRule.objects.create(category=new_category[0], match_type=rule["match_type"], match_text=rule["match_text"])
+
+            # Save cateogries and rules then update transactions
             if all(formset.is_valid() for formset in rule_formsets):
                 category_formset.save()
                 for category_form, rule_formset in zip(category_formset, rule_formsets):
@@ -112,8 +122,21 @@ def category_rules(request):
         categoryIsValid = [(category_form.is_valid() and rule_formset.is_valid()) for category_form, rule_formset in zip(category_formset, rule_formsets)]
     # if "cancel-changes" in request.POST: Nothing to do, just redirect
 
-    context = {"category_formset": category_formset, "zipped_lists": zip(category_formset, rule_formsets, categoryIsValid)}
-    return render(request, "category_rules.html", context)
+    if "getJson" in request.GET:
+        jsonOuput = []
+        for cat in Category.objects.filter(Q(user=request.user) & ~Q(pk=Category.get_uncategorized(request.user).pk)):
+            jsonOuput.append({"name": cat.name, "priority": cat.priority, "rules": 
+                              [{"match_type": rule.match_type, "match_text": rule.match_text} for rule in CategoryRule.objects.filter(category=cat)]})
+        return HttpResponse(
+            json.dumps(jsonOuput, indent=2),
+            headers={
+                "Content-Type": "application/json",
+                "Content-Disposition": 'attachment; filename="categories.json"',
+            },
+        )
+    else:
+        context = {"category_formset": category_formset, "zipped_lists": zip(category_formset, rule_formsets, categoryIsValid), "upload_form": upload_form}
+        return render(request, "category_rules.html", context)
 
 
 @login_required

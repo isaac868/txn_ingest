@@ -162,5 +162,9 @@ function createSortable() {
     Sortable.create(sortableContainer, { filter: 'button, select, input', preventOnFilter: false, onUpdate: rePrioritizeCategories });
 }
 
+// Enable bootstrap tooltips
+const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+
 rePrioritizeCategories();
 createSortable();
