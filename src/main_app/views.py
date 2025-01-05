@@ -117,8 +117,9 @@ def category_rules(request):
             # Save cateogries and rules
             category_formset.save()
             for category_form, rule_formset in zip(category_formset, rule_formsets):
-                rule_formset.instance = category_form.instance
-                rule_formset.save()
+                if not category_form in category_formset.deleted_forms:
+                    rule_formset.instance = category_form.instance
+                    rule_formset.save()
 
             # Update transactions with new categories
             txns = Transaction.objects.filter(Q(user=request.user) & Q(category_override=False))
