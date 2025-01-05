@@ -86,9 +86,7 @@ class FileSelectForm(forms.Form):
             for row in reader:
                 # Check all rows have same number of columns
                 if csv_col_num != len(row) and csv_col_num != 0:
-                    raise ValidationError(
-                        "Invalid CSV file, all rows must have the same number of columns.", params={"line": row_index}, code="input_error"
-                    )
+                    raise ValidationError("Invalid CSV file, all rows must have the same number of columns.", params={"line": row_index}, code="input_error")
                 csv_col_num = len(row)
 
                 # Check date, will raise ValueError if parsing fails
@@ -98,7 +96,7 @@ class FileSelectForm(forms.Form):
                     raise ValidationError("Error parsing date on line %(line)s.", params={"line": row_index}, code="input_error")
 
                 # Check the column pointed to by amount_col is actually a number
-                row[parse_rule.amount_col] = row[parse_rule.amount_col].replace("$","").replace(",","")
+                row[parse_rule.amount_col] = row[parse_rule.amount_col].replace("$", "").replace(",", "")
                 try:
                     float(row[parse_rule.amount_col])
                 except ValueError:
@@ -157,13 +155,14 @@ class CategoryForm(forms.ModelForm):
 
     def clean_name(self):
         name = self.cleaned_data["name"]
-    
+
         if name == Category.get_uncategorized(self.user).name:
             raise ValidationError("Category cannot be named %(cat)s", params={"cat": Category.get_uncategorized(self.user).name})
         if name in [cat.name for cat in Category.objects.filter(Q(user=self.user) & ~Q(pk=self.instance.pk))]:
             raise ValidationError("This category name is already in use", code="input_error")
         return name
-    
+
+
 class CategoryJsonFileForm(forms.Form):
     json_file = forms.FileField(required=False, label="Optional: JSON Rule File")
 
@@ -178,14 +177,15 @@ class CategoryJsonFileForm(forms.Form):
                     self.json_data = json.loads(data)
                     validate(self.json_data, schema)
             except Exception as e:
-                raise ValidationError("Invalid JSON file: %(schema_error)s",  params={"schema_error": e.message}, code="input_error")
+                raise ValidationError("Invalid JSON file: %(schema_error)s", params={"schema_error": e.message}, code="input_error")
         return json_file
+
 
 class BankForm(forms.ModelForm):
     class Meta:
         model = Bank
         exclude = ["user"]
-        labels = { "name": "Bank Name" }
+        labels = {"name": "Bank Name"}
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop("user", None)
@@ -193,7 +193,7 @@ class BankForm(forms.ModelForm):
 
     def clean_name(self):
         name = self.cleaned_data["name"]
-    
+
         if name in [bank.name for bank in Bank.objects.filter(Q(user=self.user) & ~Q(pk=self.instance.pk))]:
             raise ValidationError("This bank name is already in use", code="input_error")
         return name
