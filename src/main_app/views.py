@@ -139,7 +139,7 @@ def category_rules(request):
                 {
                     "name": cat.name,
                     "priority": cat.priority,
-                    "rules": [{"match_type": rule.match_type, "match_text": rule.match_text} for rule in CategoryRule.objects.filter(category=cat)],
+                    "rules": [{"match_type": rule.match_type, "match_text": rule.match_text} for rule in cat.rule_set.all()],
                 }
             )
         return HttpResponse(
