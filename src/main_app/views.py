@@ -160,7 +160,7 @@ def accounts(request):
     AccountFormset_ = inlineformset_factory(Bank, Account, formset=AccountFormset, form=AccountForm, extra=1, can_delete=True)
 
     bank_formset = BankFormset(instance=request.user, form_kwargs={"user": request.user})
-    account_formsets = [AccountFormset_(instance=bank_form.instance, prefix=f"{bank_form.prefix}-account_set") for bank_form in bank_formset]
+    account_formsets = [AccountFormset_(instance=bank_form.instance, prefix=f"{bank_form.prefix}-account_set", bank=bank_form) for bank_form in bank_formset]
     bankIsValid = [True for _ in bank_formset]
 
     if request.method == "POST" and "save-changes" in request.POST:
