@@ -44,7 +44,7 @@
                             <div class="col-5">
                                 <label class="form-label" for="{{ category.name.id_for_label }}">{{ category.name.label }}</label>
                                 {% with feedback_id_attr="aria-describedby:"|add:category.prefix|add:"_feedback" %}
-                                    {{ category.name|add_class:"form-control"|add_error_class:"is-invalid"|add_error_attr:feedback_id_attr|append_attr:"required" }}
+                                    {{ category.name|add_class:"form-control"|add_error_class:"is-invalid"|add_error_attr:feedback_id_attr }}
                                     {% if category.name.errors %}
                                     <div class="invalid-feedback" id="{{ feedback_id_attr }}">
                                         {{ category.name.errors|first }}
