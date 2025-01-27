@@ -28,7 +28,11 @@
         {{ category_formset.management_form }}
         <div id="sortableContainer">
             {% for category, rules, valid_card in zipped_lists %}
+            {% if category.DELETE.value %}
+            <div style="display: none">
+            {% else %}
             <div>
+            {% endif %}
                 {% if valid_card %}
                 <div class="card mb-4">
                 {% else %}
@@ -69,7 +73,11 @@
                             {{ rules.management_form }}
                             <div class="rules-wrapper">
                                 {% for rule in rules %}
+                                {% if rule.DELETE.value %}
+                                <div class="row align-items-stretch mb-2" style="display: none">
+                                {% else %}
                                 <div class="row align-items-stretch mb-2">
+                                {% endif %}
                                     {{ rule.id.as_hidden }}
                                     <div class="col-3">
                                         {{ rule.match_type.errors }}
