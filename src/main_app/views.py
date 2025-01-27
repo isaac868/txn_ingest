@@ -34,53 +34,59 @@ def parse_rules(request):
 
 class UploadView(LoginRequiredMixin, View):
     def get(self, request):
-        # "preview" set during tabulator ajax query
-        if "preview" in request.GET and default_storage.exists(f"{request.user.pk}"):
-            with default_storage.open(f"{request.user.pk}", "r") as file:
-                reader = csv.DictReader(file)
-                table_data = []
-                for row in reader:
-                    row["cat"] = Category.objects.get(pk=row["cat"]).name
-                    row["act"] = Account.objects.get(pk=row["act"]).name
-                    table_data.append(row)
-                return JsonResponse(table_data, safe=False)
-        elif "uploaded-file" in request.session and default_storage.exists(f"{request.user.pk}"):
-            del request.session["uploaded-file"]
-            return render(request, "upload_preview.html")
-        else:
-            return render(request, "upload.html", {"form": FileSelectForm(user=request.user)})
+        return render(request, "upload.html", {"form": FileSelectForm(user=request.user)})
 
     def post(self, request):
         if "preview-upload" in request.POST:
             form = FileSelectForm(request.POST, request.FILES, user=request.user)
             if form.is_valid():
-                request.session["uploaded-file"] = True
+                return redirect(reverse("upload-preview"))
             else:
                 return render(request, "upload.html", {"form": form})
-        else:
-            if "save-upload" in request.POST:
+
+
+class UploadViewPreview(LoginRequiredMixin, View):
+    def get(self, request):
+        if default_storage.exists(f"{request.user.pk}"):
+            # "preview" set during tabulator ajax query
+            if "getdata" in request.GET and default_storage.exists(f"{request.user.pk}"):
                 with default_storage.open(f"{request.user.pk}", "r") as file:
                     reader = csv.DictReader(file)
-
-                    cats = {cat.pk: cat for cat in Category.objects.filter(user=request.user)}
-                    acts = {act.pk: act for act in Account.objects.filter(bank__user=request.user)}
-                    txns = []
-
+                    table_data = []
                     for row in reader:
-                        txn = Transaction(
-                            user=request.user,
-                            date=datetime.fromisoformat(row["date"]),
-                            description=row["desc"],
-                            category=cats.get(int(row["cat"])),
-                            account=acts.get(int(row["act"])),
-                            amount=row["amt"],
-                            category_override=False,
-                        )
-                        txns.append(txn)
-                    Transaction.objects.bulk_create(txns)
-            # if "cancel-upload" in request.POST: Nothing to do, just redirect
+                        row["cat"] = Category.objects.get(pk=row["cat"]).name
+                        row["act"] = Account.objects.get(pk=row["act"]).name
+                        table_data.append(row)
+                    return JsonResponse(table_data, safe=False)
+            else:
+                return render(request, "upload_preview.html")
+        else:
+            return redirect(reverse("upload"))
 
-            default_storage.delete(f"{request.user.pk}")
+    def post(self, request):
+        if "save-upload" in request.POST and default_storage.exists(f"{request.user.pk}"):
+            with default_storage.open(f"{request.user.pk}", "r") as file:
+                reader = csv.DictReader(file)
+
+                cats = {cat.pk: cat for cat in Category.objects.filter(user=request.user)}
+                acts = {act.pk: act for act in Account.objects.filter(bank__user=request.user)}
+                txns = []
+
+                for row in reader:
+                    txn = Transaction(
+                        user=request.user,
+                        date=datetime.fromisoformat(row["date"]),
+                        description=row["desc"],
+                        category=cats.get(int(row["cat"])),
+                        account=acts.get(int(row["act"])),
+                        amount=row["amt"],
+                        category_override=False,
+                    )
+                    txns.append(txn)
+                Transaction.objects.bulk_create(txns)
+            # if "cancel-upload" in request.POST: Nothing to do, just redirect and delete cached file
+
+        default_storage.delete(f"{request.user.pk}")
         return redirect(reverse("upload"))
 
 
@@ -165,13 +171,15 @@ def accounts(request):
 
     if request.method == "POST" and "save-changes" in request.POST:
         bank_formset = BankFormset(request.POST, instance=request.user, form_kwargs={"user": request.user})
-        account_formsets = [AccountFormset_(request.POST, instance=bank_form.instance, prefix=f"{bank_form.prefix}-account_set", bank=bank_form) for bank_form in bank_formset]
+        account_formsets = [
+            AccountFormset_(request.POST, instance=bank_form.instance, prefix=f"{bank_form.prefix}-account_set", bank=bank_form) for bank_form in bank_formset
+        ]
         if bank_formset.is_valid() and all(formset.is_valid() for formset in account_formsets):
-                bank_formset.save()
-                for bank_form, account_formset in zip(bank_formset, account_formsets):
-                    account_formset.instance = bank_form.instance
-                    account_formset.save()
-                return redirect(reverse(accounts))
+            bank_formset.save()
+            for bank_form, account_formset in zip(bank_formset, account_formsets):
+                account_formset.instance = bank_form.instance
+                account_formset.save()
+            return redirect(reverse(accounts))
         bankIsValid = [
             (bank_form.is_valid() and account_formset.is_valid() and (bank_form.instance.pk != None))
             for bank_form, account_formset in zip(bank_formset, account_formsets)

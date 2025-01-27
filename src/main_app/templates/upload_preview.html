@@ -16,8 +16,8 @@
             DateTime:luxon.DateTime,
         },
         height:"90vh",
-        ajaxURL:"{% url "upload" %}",
-        ajaxParams:{ preview: "True" },
+        ajaxURL:"{% url "upload-preview" %}",
+        ajaxParams:{ getdata: "True" },
         movableRows:false, 
         rowHeader:{formatter:"rowSelection", titleFormatter:"rowSelection", hozAlign:"center", headerSort:false, resizable:false},
         columns:[
