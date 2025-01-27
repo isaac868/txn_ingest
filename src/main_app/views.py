@@ -15,7 +15,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.contrib.auth.decorators import login_required
 from .models import ParseRule, CategoryRule, Category, Transaction, Account, Bank
-from .forms import ParseRuleForm, FileSelectForm, CategoryForm, AccountForm, BankForm, CategoryJsonFileForm
+from .forms import ParseRuleForm, FileSelectForm, CategoryForm, AccountForm, AccountFormset, BankForm, CategoryJsonFileForm
 from .common import get_category, get_user_categorization_dicts
 
 
@@ -157,28 +157,21 @@ def category_rules(request):
 @login_required
 def accounts(request):
     BankFormset = inlineformset_factory(User, Bank, form=BankForm, exclude=["user"], extra=1, can_delete=True)
-    AccountFormset = inlineformset_factory(Bank, Account, form=AccountForm, extra=1, exclude=[])
+    AccountFormset_ = inlineformset_factory(Bank, Account, formset=AccountFormset, form=AccountForm, extra=1, can_delete=True)
 
     bank_formset = BankFormset(instance=request.user, form_kwargs={"user": request.user})
-    account_formsets = [AccountFormset(instance=bank_form.instance, prefix=f"{bank_form.prefix}-account_set") for bank_form in bank_formset]
+    account_formsets = [AccountFormset_(instance=bank_form.instance, prefix=f"{bank_form.prefix}-account_set") for bank_form in bank_formset]
     bankIsValid = [True for _ in bank_formset]
 
     if request.method == "POST" and "save-changes" in request.POST:
         bank_formset = BankFormset(request.POST, instance=request.user, form_kwargs={"user": request.user})
-        account_formsets = [AccountFormset(request.POST, instance=bank_form.instance, prefix=f"{bank_form.prefix}-account_set") for bank_form in bank_formset]
-        if bank_formset.is_valid():
-            if all(formset.is_valid() for formset in account_formsets):
+        account_formsets = [AccountFormset_(request.POST, instance=bank_form.instance, prefix=f"{bank_form.prefix}-account_set", bank=bank_form) for bank_form in bank_formset]
+        if bank_formset.is_valid() and all(formset.is_valid() for formset in account_formsets):
                 bank_formset.save()
-                successfully_saved_accounts = True
                 for bank_form, account_formset in zip(bank_formset, account_formsets):
-                    if bank_form.instance.pk == None and account_formset.cleaned_data != [{}]:
-                        successfully_saved_accounts = False
-                        bank_form.add_error("name", ValidationError("Cannot save an account without a named bank", code="input_error"))
-                        break
                     account_formset.instance = bank_form.instance
                     account_formset.save()
-                if successfully_saved_accounts:
-                    return redirect(reverse(accounts))
+                return redirect(reverse(accounts))
         bankIsValid = [
             (bank_form.is_valid() and account_formset.is_valid() and (bank_form.instance.pk != None))
             for bank_form, account_formset in zip(bank_formset, account_formsets)

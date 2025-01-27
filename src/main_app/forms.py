@@ -208,3 +208,16 @@ class AccountForm(forms.ModelForm):
             "account_type": "Account Type",
             "currency": "Currency",
         }
+
+
+class AccountFormset(forms.BaseInlineFormSet):
+    def __init__(self, *args, **kwargs):
+        self.bank = kwargs.pop("bank", None)
+        super().__init__(*args, **kwargs)
+
+    def clean(self):
+        if any(self.errors):
+            return
+
+        if self.bank.cleaned_data == {} and self.cleaned_data != [{}] and not self._should_delete_form(self.forms[0]):
+            self.forms[0].add_error("name", "Cannot save an account without a named bank")
