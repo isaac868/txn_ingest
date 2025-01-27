@@ -74,7 +74,7 @@ class FileSelectForm(forms.Form):
             except ParseRule.DoesNotExist:
                 raise ValidationError("The parse rule %(rule)s does not exist.", params={"rule": self.choice.label}, code="internal_error")
 
-            csv_rows = [["id", "date", "desc", "cat", "amt", "act"]]
+            csv_rows = [["idx", "date", "desc", "cat", "amnt", "accnt"]]
             reader = csv.reader(file)
             if parse_rule.start_line:
                 for x in range(parse_rule.start_line):

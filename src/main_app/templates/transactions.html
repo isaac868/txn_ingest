@@ -20,7 +20,7 @@
             DateTime:luxon.DateTime,
         },
         height:"90vh",
-        index: "pk",
+        index: "idx",
         ajaxURL:"{% url "transactions" %}",
         ajaxParams:{ preview: "True" },
         movableRows:false, 
@@ -33,14 +33,14 @@
                 invalidPlaceholder:"(invalid date)",
                 timezone:"America/Los_Angeles",
             }},
-            {title:"Account", field: "account__name", sorter:"string"},
-            {title:"Description", field: "description", sorter:"string"},
-            {title:"Amount", field: "amount", sorter:"number"},
-            {title:"Category", field: "category__name", sorter:"string", editor:"list", validator:"required", editorParams:{
+            {title:"Account", field: "accnt", sorter:"string"},
+            {title:"Description", field: "desc", sorter:"string"},
+            {title:"Amount", field: "amnt", sorter:"number"},
+            {title:"Category", field: "cat", sorter:"string", editor:"list", validator:"required", editorParams:{
                 values:categoryNames,
                 allowEmpty: false,
             }},
-            {title:"Category Override", field:"category_override", sorter:"boolean", formatter:"tickCross", editor:true},
+            {title:"Category Override", field:"cat_o", sorter:"boolean", formatter:"tickCross", editor:true},
         ],
     });
 

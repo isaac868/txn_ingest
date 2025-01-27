@@ -7,7 +7,7 @@ from django.shortcuts import redirect
 from django.forms import inlineformset_factory
 from django.urls import reverse
 from django.http import JsonResponse, HttpResponse
-from django.db.models import Q
+from django.db.models import Q, F
 from django.contrib.auth import login, forms as auth_forms
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.files.storage import default_storage
@@ -45,7 +45,7 @@ class UploadView(LoginRequiredMixin, View):
                 return render(request, "upload.html", {"form": form})
 
 
-class UploadViewPreview(LoginRequiredMixin, View):
+class UploadPreviewView(LoginRequiredMixin, View):
     def get(self, request):
         if default_storage.exists(f"{request.user.pk}"):
             # "preview" set during tabulator ajax query
@@ -55,7 +55,7 @@ class UploadViewPreview(LoginRequiredMixin, View):
                     table_data = []
                     for row in reader:
                         row["cat"] = Category.objects.get(pk=row["cat"]).name
-                        row["act"] = Account.objects.get(pk=row["act"]).name
+                        row["accnt"] = Account.objects.get(pk=row["accnt"]).name
                         table_data.append(row)
                     return JsonResponse(table_data, safe=False)
             else:
@@ -194,7 +194,7 @@ class TransactionView(LoginRequiredMixin, View):
         # "preview" set during tabulator ajax query
         if "preview" in request.GET:
             txns = Transaction.objects.filter(user=request.user).values(
-                "pk", "account__name", "amount", "category__name", "description", "date", "category_override"
+                "date", accnt=F("account__name"), amnt=F("amount"), cat=F("category__name"), desc=F("description"), cat_o=F("category_override"), idx=F("pk")
             )
             table_data = []
             for txn in txns:
