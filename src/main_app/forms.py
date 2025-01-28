@@ -111,7 +111,7 @@ class FileSelectForm(forms.Form):
                     description += " " + row[parse_rule.sub_desc_col].strip()
                 csv_rows.append(
                     [
-                        row_index,
+                        row_index - parse_rule.start_line,
                         datetime.strptime(row[parse_rule.date_col], parse_rule.date_fmt_str).isoformat(),
                         description,
                         get_category(categorization_dicts, description).pk,

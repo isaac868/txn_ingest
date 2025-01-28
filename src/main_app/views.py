@@ -40,7 +40,7 @@ class UploadView(LoginRequiredMixin, View):
         if "preview-upload" in request.POST:
             form = FileSelectForm(request.POST, request.FILES, user=request.user)
             if form.is_valid():
-                return redirect(reverse("upload-preview"))
+                return redirect(reverse("upload_preview"))
             else:
                 return render(request, "upload.html", {"form": form})
 
@@ -48,8 +48,8 @@ class UploadView(LoginRequiredMixin, View):
 class UploadPreviewView(LoginRequiredMixin, View):
     def get(self, request):
         if default_storage.exists(f"{request.user.pk}"):
-            # "preview" set during tabulator ajax query
-            if "getdata" in request.GET and default_storage.exists(f"{request.user.pk}"):
+            # "getTxnData" set during tabulator ajax query
+            if "getTxnData" in request.GET and default_storage.exists(f"{request.user.pk}"):
                 with default_storage.open(f"{request.user.pk}", "r") as file:
                     reader = csv.DictReader(file)
                     table_data = []
@@ -59,30 +59,58 @@ class UploadPreviewView(LoginRequiredMixin, View):
                         table_data.append(row)
                     return JsonResponse(table_data, safe=False)
             else:
-                return render(request, "upload_preview.html")
+                categories = [(cat.pk, cat.name) for cat in Category.objects.filter(user=request.user)]
+                return render(
+                    request,
+                    "tables.html",
+                    {
+                        "override_values": categories,
+                        "row_select_title": "Ommit",
+                        "confirm_btn_txt": "Upload Tansactions",
+                        "page_url": reverse("upload_preview"),
+                    },
+                )
         else:
             return redirect(reverse("upload"))
 
     def post(self, request):
-        if "save-upload" in request.POST and default_storage.exists(f"{request.user.pk}"):
+        change_data = json.loads(request.body)
+        if "cancel" not in change_data and default_storage.exists(f"{request.user.pk}"):
             with default_storage.open(f"{request.user.pk}", "r") as file:
                 reader = csv.DictReader(file)
 
-                cats = {cat.pk: cat for cat in Category.objects.filter(user=request.user)}
-                acts = {act.pk: act for act in Account.objects.filter(bank__user=request.user)}
+                categories_dict = {category.pk: category for category in Category.objects.filter(user=request.user)}
+                accounts_dict = {account.pk: account for account in Account.objects.filter(bank__user=request.user)}
+                categorization_dicts = get_user_categorization_dicts(request.user)
                 txns = []
+                row_idx = 0
 
                 for row in reader:
+                    if row_idx in change_data["deleted"]:
+                        row_idx += 1
+                        continue
+
+                    # Change the category if it was overridden
+                    cat = categories_dict.get(int(row["cat"]))
+                    cat_o = False
+                    if str(row_idx) in change_data["changes"]:
+                        if change_data["changes"][str(row_idx)]["override"]:
+                            cat = categories_dict.get(change_data["changes"][str(row_idx)]["category"])
+                        else:
+                            cat = get_category(categorization_dicts, row["desc"])
+                        cat_o = change_data["changes"][str(row_idx)]["override"]
+
                     txn = Transaction(
                         user=request.user,
                         date=datetime.fromisoformat(row["date"]),
                         description=row["desc"],
-                        category=cats.get(int(row["cat"])),
-                        account=acts.get(int(row["act"])),
-                        amount=row["amt"],
-                        category_override=False,
+                        category=cat,
+                        account=accounts_dict.get(int(row["accnt"])),
+                        amount=row["amnt"],
+                        category_override=cat_o,
                     )
                     txns.append(txn)
+                    row_idx += 1
                 Transaction.objects.bulk_create(txns)
             # if "cancel-upload" in request.POST: Nothing to do, just redirect and delete cached file
 
@@ -191,8 +219,8 @@ def accounts(request):
 
 class TransactionView(LoginRequiredMixin, View):
     def get(self, request):
-        # "preview" set during tabulator ajax query
-        if "preview" in request.GET:
+        # "getTxnData" set during tabulator ajax query
+        if "getTxnData" in request.GET:
             txns = Transaction.objects.filter(user=request.user).values(
                 "date", accnt=F("account__name"), amnt=F("amount"), cat=F("category__name"), desc=F("description"), cat_o=F("category_override"), idx=F("pk")
             )
@@ -202,15 +230,21 @@ class TransactionView(LoginRequiredMixin, View):
             return JsonResponse(table_data, safe=False)
         else:
             categories = [(cat.pk, cat.name) for cat in Category.objects.filter(user=request.user)]
-            return render(request, "transactions.html", {"override_values": categories})
+            return render(
+                request,
+                "tables.html",
+                {"override_values": categories, "row_select_title": "Delete", "confirm_btn_txt": "Save changes", "page_url": reverse("transactions")},
+            )
 
     def post(self, request):
         change_data = json.loads(request.body)
+        if "cancel" in change_data:
+            return HttpResponse(status=200)
         try:
-            changed_txns = Transaction.objects.filter(Q(user=request.user) & Q(pk__in=[item["pk"] for item in change_data["changes"]]))
+            changed_txns = Transaction.objects.filter(Q(user=request.user) & Q(pk__in=[*change_data["changes"]]))
             categorization_dicts = get_user_categorization_dicts(request.user)
-            for change in change_data["changes"]:
-                changed_txn = changed_txns.get(pk=change["pk"])
+            for change_idx, change in change_data["changes"].items():
+                changed_txn = changed_txns.get(pk=change_idx)
                 if change["override"]:
                     changed_txn.category = Category.objects.filter(user=request.user).get(pk=change["category"])
                 else:
