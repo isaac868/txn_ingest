@@ -58,6 +58,7 @@ class Transaction(models.Model):
 
     class Meta:
         ordering = ["date", "description"]
+        indexes = [models.Index(fields=["date"]), models.Index(fields=["user", "date"]), models.Index(fields=["user", "category"])]
 
     def __str__(self):
         return self.description
