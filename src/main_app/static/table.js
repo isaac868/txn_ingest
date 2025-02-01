@@ -38,6 +38,10 @@ var table = new Tabulator("#txn-table", {
     ],
 });
 
+// Enable bootstrap tooltips
+const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+
 table.on("cellEdited", function (cell) {
     if (cell.getField() == "cat") {
         cell.getRow().update({ "cat_o": true })

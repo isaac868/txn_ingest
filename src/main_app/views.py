@@ -228,12 +228,21 @@ class TransactionView(LoginRequiredMixin, View):
             for txn in txns:
                 table_data.append(txn)
             return JsonResponse(table_data, safe=False)
+        elif "getCsv" in request.GET:
+            txns = Transaction.objects.filter(user=request.user).values("date", "account__name", "amount", "category__name", "description")
+            response = HttpResponse(content_type="text/csv")
+            response["Content-Disposition"] = 'attachment; filename="transactions.csv"'
+            writer = csv.writer(response)
+            writer.writerow(["Date", "Account", "Description", "Category", "Amount"])
+            for txn in txns:
+                writer.writerow([txn["date"], txn["account__name"], txn["description"], txn["category__name"], txn["amount"]])
+            return response
         else:
             categories = [(cat.pk, cat.name) for cat in Category.objects.filter(user=request.user)]
             return render(
                 request,
                 "tables.html",
-                {"override_values": categories, "row_select_title": "Delete", "confirm_btn_txt": "Save changes", "page_url": reverse("transactions")},
+                {"override_values": categories, "row_select_title": "Delete", "confirm_btn_txt": "Save changes", "page_url": reverse("transactions"), "downloadable": True},
             )
 
     def post(self, request):

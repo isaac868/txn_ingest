@@ -19,6 +19,11 @@
     {% csrf_token %}
     <input type="button" value="{{ confirm_btn_txt }}" onclick=confirmChanges() class="btn btn-primary">
     <input type="button" value="Cancel" onclick=cancelChanges() class="btn btn-secondary">
+    {% if downloadable %}
+    <a href="{{ page_url }}{% querystring getCsv="True" %}" class="btn btn-success" data-bs-toggle="tooltip" data-bs-title="Download transactions as CSV">
+        <i class="bi bi-download"></i>
+    </a>
+    {% endif %}
 </div>
 
 {{ override_values|json_script:"options" }}
