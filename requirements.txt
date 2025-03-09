@@ -3,3 +3,4 @@ psycopg[binary]
 django-widget-tweaks
 gunicorn
 jsonschema
+requests
