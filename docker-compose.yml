@@ -3,16 +3,7 @@ services:
     build: .
     volumes:
       - static_files:/app/static
-    environment:
-      - DJANGO_DB_NAME=${POSTGRES_DB_NAME}
-      - DJANGO_DB_USER=${POSTGRES_USER}
-      - DJANGO_DB_PASS=${POSTGRES_PASSWORD}
-      - DJANGO_DB_HOST=db
-      - DJANGO_DB_PORT=5432
-      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
-      - DJANGO_DEBUG=${DJANGO_DEBUG}
-      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS}
-      - DJANGO_TRUSTED_ORIGINS=${DJANGO_TRUSTED_ORIGINS}
+    env_file: ".env"
     depends_on:
       - db
 
@@ -31,10 +22,7 @@ services:
     image: postgres:17
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_DB=${POSTGRES_DB_NAME}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    env_file: ".env"
 
 volumes:
   postgres_data:

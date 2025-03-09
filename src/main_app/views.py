@@ -1,6 +1,8 @@
 from django.shortcuts import render
 import csv
 import json
+import os
+import requests
 from datetime import datetime
 from django.views import View
 from django.shortcuts import redirect
@@ -17,6 +19,51 @@ from django.contrib.auth.decorators import login_required
 from .models import ParseRule, CategoryRule, Category, Transaction, Account, Bank
 from .forms import ParseRuleForm, FileSelectForm, CategoryForm, AccountForm, AccountFormset, BankForm, CategoryJsonFileForm
 from .common import get_category, get_user_categorization_dicts
+
+
+@login_required
+def dashboard(request):
+    superset_host = os.getenv("SUPERSET_HOST", "")
+    superset_port = os.getenv("SUPERSET_PORT", "")
+    superset_username = os.getenv("SUPERSET_USERNAME", "")
+    superset_pass = os.getenv("SUPERSET_PASSWORD", "")
+    superset_api_endpoint = f"{superset_host}:{superset_port}/api/v1/"
+    session = requests.Session()
+
+    resp = session.post(superset_api_endpoint + "security/login", json={"username": superset_username, "password": superset_pass, "provider": "db"})
+    access_token = resp.json()["access_token"]
+
+    resp = session.get(superset_api_endpoint + "security/csrf_token", headers={"Authorization": f"Bearer {access_token}"})
+    csrf_token = resp.json()["result"]
+
+    resp = session.get(superset_api_endpoint + "dashboard/", headers={"Authorization": f"Bearer {access_token}"})
+    dashboards = resp.json()["result"]
+    dashboard_id = None
+    for dashboard in dashboards:
+        if dashboard["dashboard_title"] == "expenses_dashboard":
+            dashboard_id = dashboard["id"]
+            break
+
+    resp = session.get(superset_api_endpoint + "dataset/", headers={"Authorization": f"Bearer {access_token}"})
+    datasets = resp.json()["result"]
+    dataset_id = None
+    for dataset in datasets:
+        if dataset["table_name"] == "expenses_dataset":
+            dataset_id = dataset["id"]
+            break
+
+    body = {
+        "resources": [{"id": f"{dashboard_id}", "type": "dashboard"}],
+        "rls": [{"clause": f"user_id={request.user.pk}", "dataset": dataset_id}],
+        "user": {"first_name": request.user.username, "last_name": request.user.username, "username": request.user.username},
+    }
+    resp = session.post(
+        superset_api_endpoint + "security/guest_token", headers={"Authorization": f"Bearer {access_token}", "X-CSRFToken": csrf_token}, json=body
+    )
+
+    uuid_resp = session.get(superset_api_endpoint + f"dashboard/{dashboard_id}" + "/embedded", headers={"Authorization": f"Bearer {access_token}"})
+
+    return render(request, "dashboard.html", {"guest_token": resp.json()["token"], "db_uuid": uuid_resp.json()["result"]["uuid"]})
 
 
 @login_required
@@ -242,7 +289,13 @@ class TransactionView(LoginRequiredMixin, View):
             return render(
                 request,
                 "tables.html",
-                {"override_values": categories, "row_select_title": "Delete", "confirm_btn_txt": "Save changes", "page_url": reverse("transactions"), "downloadable": True},
+                {
+                    "override_values": categories,
+                    "row_select_title": "Delete",
+                    "confirm_btn_txt": "Save changes",
+                    "page_url": reverse("transactions"),
+                    "downloadable": True,
+                },
             )
 
     def post(self, request):

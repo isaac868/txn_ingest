@@ -4,6 +4,7 @@ from django.views.generic.base import RedirectView
 from . import views
 
 urlpatterns = [
+    path("dashboard/", views.dashboard, name="dashboard"),
     path("parse-rules/", views.parse_rules, name="parse_rules"),
     path("category-rules/", views.category_rules, name="category_rules"),
     path("accounts/", views.accounts, name="accounts"),

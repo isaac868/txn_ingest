@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block header %}
+<script src="https://unpkg.com/@superset-ui/embedded-sdk"></script>
+
+<style>
+    iframe {
+        width: 100%;
+        height: 80vh;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="superset-container"></div>
+
+<script>
+    
+    supersetEmbeddedSdk.embedDashboard({
+        id: "{{ db_uuid }}", // given by the Superset embedding UI
+        supersetDomain: "http://localhost:8088",
+        mountPoint: document.getElementById("superset-container"), // any html element that can contain an iframe
+        fetchGuestToken: () => Promise.resolve("{{ guest_token }}"),
+        dashboardUiConfig: { // dashboard UI config: hideTitle, hideTab, hideChartControls, filters.visible, filters.expanded (optional), urlParams (optional)
+            hideTitle: true,
+        },
+        // optional additional iframe sandbox attributes
+        iframeSandboxExtras: ['allow-top-navigation', 'allow-popups-to-escape-sandbox']
+    });
+</script>
+
+{% endblock %}
